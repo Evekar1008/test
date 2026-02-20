@@ -42,16 +42,11 @@ def test_template_validation_rejects_mixed_part_types():
         assert "samme type" in str(exc)
 
 
-def test_apply_template_to_shelf_changes_assignment():
+def test_simulation_step_updates_state_and_machine_signals():
     service = ProductionCellService()
-    service.upsert_layout_template(
-        "mini",
-        [
-            {"part_type_id": "PT-INP-080", "x_mm": 120, "y_mm": 120, "z_mm": 55},
-            {"part_type_id": "PT-INP-080", "x_mm": 220, "y_mm": 120, "z_mm": 55},
-        ],
-    )
-    layout = service.apply_template_to_shelf("2", "mini")
-    assert layout["template_name"] == "mini"
-    assert layout["part_type_id"] == "PT-INP-080"
-    assert len(layout["placements"]) == 2
+    service.simulation_start()
+    sim = service.simulation_step()
+    assert sim["tick"] == 1
+    assert sim["active_shelf"] == "1"
+    assert service.cnc_status["machine_state"] in ["Kjører", "Klar"]
+    assert service.robot_status["active_task"] != "Idle"

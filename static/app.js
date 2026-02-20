@@ -106,32 +106,25 @@ async function refresh() {
   renderShelvesAndTemplates(state);
   renderKeyValues('robotStatus', state.robot);
   renderKeyValues('cncStatus', state.cnc);
+  renderKeyValues('simulationStatus', state.simulation);
   document.getElementById('shelfWidth').value = state.settings.shelf_width_mm;
   document.getElementById('shelfDepth').value = state.settings.shelf_depth_mm;
 
-  const shelf = document.getElementById('shelfSelect').value || state.shelves[0];
+  const shelf = document.getElementById('shelfSelect').value || state.simulation.active_shelf || state.shelves[0];
   await loadShelfLayout(shelf);
 }
 
 async function loadShelfLayout(shelf) {
   const res = await fetch(`/api/leanlift/shelf-layout/${encodeURIComponent(shelf)}`);
   const layout = await res.json();
-  if (!res.ok) {
-    alert(layout.error || 'Feil ved lasting av hylle');
-    return;
-  }
+  if (!res.ok) return alert(layout.error || 'Feil ved lasting av hylle');
   renderShelfSvg(layout);
   renderCoordsTable(layout);
 }
 
 async function saveSettings() {
-  const payload = {
-    shelf_width_mm: Number(document.getElementById('shelfWidth').value),
-    shelf_depth_mm: Number(document.getElementById('shelfDepth').value),
-  };
-  const res = await fetch('/api/settings', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  });
+  const payload = { shelf_width_mm: Number(document.getElementById('shelfWidth').value), shelf_depth_mm: Number(document.getElementById('shelfDepth').value) };
+  const res = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const data = await res.json();
   if (!res.ok) return alert(data.error || 'Feil');
   await refresh();
@@ -145,9 +138,7 @@ async function saveTemplate() {
     return alert('Ugyldig JSON');
   }
   const payload = { template_name: document.getElementById('templateNameInput').value, placements };
-  const res = await fetch('/api/layout-templates', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  });
+  const res = await fetch('/api/layout-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const data = await res.json();
   if (!res.ok) return alert(data.error || 'Feil');
   document.getElementById('templateNameInput').value = data.template_name;
@@ -155,34 +146,29 @@ async function saveTemplate() {
 }
 
 async function applyTemplate() {
-  const payload = {
-    shelf: document.getElementById('shelfSelect').value,
-    template_name: document.getElementById('templateSelect').value,
-  };
-  const res = await fetch('/api/shelf/apply-template', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-  });
+  const payload = { shelf: document.getElementById('shelfSelect').value, template_name: document.getElementById('templateSelect').value };
+  const res = await fetch('/api/shelf/apply-template', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   const data = await res.json();
   if (!res.ok) return alert(data.error || 'Feil');
   renderShelfSvg(data);
   renderCoordsTable(data);
+  await refresh();
 }
 
 async function selectProduct() {
-  await fetch('/api/select-product', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ product_id: document.getElementById('productSelect').value }),
-  });
+  await fetch('/api/select-product', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product_id: document.getElementById('productSelect').value }) });
   await refresh();
 }
 
 async function selectProgram() {
-  const res = await fetch('/api/cnc/select-program', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ program_number: document.getElementById('programInput').value }),
-  });
+  const res = await fetch('/api/cnc/select-program', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ program_number: document.getElementById('programInput').value }) });
   const data = await res.json();
   if (!res.ok) return alert(data.error || 'Feil');
+  await refresh();
+}
+
+async function simAction(path) {
+  await fetch(path, { method: 'POST' });
   await refresh();
 }
 
@@ -191,6 +177,9 @@ document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplat
 document.getElementById('applyTemplateBtn').addEventListener('click', applyTemplate);
 document.getElementById('selectProductBtn').addEventListener('click', selectProduct);
 document.getElementById('selectProgramBtn').addEventListener('click', selectProgram);
+document.getElementById('simStartBtn').addEventListener('click', () => simAction('/api/simulation/start'));
+document.getElementById('simPauseBtn').addEventListener('click', () => simAction('/api/simulation/pause'));
+document.getElementById('simStepBtn').addEventListener('click', () => simAction('/api/simulation/step'));
 document.getElementById('shelfSelect').addEventListener('change', (e) => loadShelfLayout(e.target.value));
 
 refresh();

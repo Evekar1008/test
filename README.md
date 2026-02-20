@@ -31,3 +31,10 @@ python app.py
 ## Regel for hylleinnhold
 - Alle delene på en hylle skal være av samme deltype.
 - En layout-mal kan ha flere posisjoner, men `part_type_id` må være lik for alle plasseringer i malen.
+
+
+## Simulering
+- Ja, programmet kan simuleres i denne versjonen.
+- Bruk knapper i UI: **Start simulering**, **Pause simulering**, **Kjør ett steg**.
+- API-endepunkter: `POST /api/simulation/start`, `POST /api/simulation/pause`, `POST /api/simulation/step`.
+- Simuleringen oppdaterer robotstatus, CNC-signaler (spindle/feed/state), aktiv hylle og hendelseslogg.
