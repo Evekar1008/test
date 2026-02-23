@@ -1,0 +1,12 @@
+<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Hyller</title><link rel="stylesheet" href="/static/style.css"/></head>
+<body data-page="shelves">{% include '_nav.html' %}
+<main>
+<section class="card"><h2>Definer plassering på hylle</h2>
+<div class="row"><label>Hylle</label><select id="shelfSelect"></select></div>
+<div class="row"><label>Malnavn</label><input id="templateNameInput" placeholder="eks. shelf-10-layout"/></div>
+<p>JSON placements (samme part_type_id): [{"part_type_id":"PT-RAW-120","x_mm":200,"y_mm":200,"z_mm":95}]</p>
+<textarea id="templateJson" rows="6"></textarea>
+<div class="row"><button id="saveTemplateBtn">Lagre mal</button><button id="applyTemplateBtn">Bruk mal på valgt hylle</button></div>
+<ul id="shelfResult"></ul>
+</section>
+</main><script src="/static/app.js"></script></body></html>

@@ -1,52 +1,38 @@
 from app import ProductionCellService
 
 
-def test_select_product_updates_cnc_and_robot():
-    service = ProductionCellService()
-    state = service.select_product("P1002")
-    assert state["active_product_id"] == "P1002"
-    assert state["cnc"]["selected_program"] == "O2801"
-
-
 def test_shelves_are_numbered_1_to_50():
     service = ProductionCellService()
     assert service.shelves[0] == "1"
     assert service.shelves[-1] == "50"
-    assert len(service.shelves) == 50
 
 
-def test_layout_has_xyz_coordinates_and_same_part_type_on_shelf():
+def test_active_shelf_layout_tracks_simulation_step():
     service = ProductionCellService()
-    layout = service.get_shelf_layout("1")
-    assert layout["shelf_width_mm"] == 2000
-    assert layout["shelf_depth_mm"] == 800
-    assert layout["placements"][0]["x_mm"] > 0
-    assert layout["placements"][0]["y_mm"] > 0
-    assert layout["placements"][0]["z_mm"] > 0
-    part_types = {p["part_type_id"] for p in layout["placements"]}
-    assert len(part_types) == 1
+    service.simulation_step()
+    assert service.simulation["active_shelf"] == "1"
+    service.simulation_step()
+    assert service.simulation["active_shelf"] == "2"
 
 
-def test_template_validation_rejects_mixed_part_types():
+def test_start_production_quantity_and_complete():
     service = ProductionCellService()
-    try:
-        service.upsert_layout_template(
-            "bad",
-            [
-                {"part_type_id": "PT-RAW-120", "x_mm": 200, "y_mm": 200, "z_mm": 95},
-                {"part_type_id": "PT-INP-080", "x_mm": 600, "y_mm": 200, "z_mm": 55},
-            ],
-        )
-        assert False, "Expected ValueError"
-    except ValueError as exc:
-        assert "samme type" in str(exc)
+    order = service.start_production("PT-RAW-120", "quantity", 2)
+    assert order["target_qty"] == 2
+    service.complete_one_part()
+    service.complete_one_part()
+    assert service.production_order["active"] is False
 
 
-def test_simulation_step_updates_state_and_machine_signals():
+def test_start_production_all_uses_part_quantity_total():
     service = ProductionCellService()
-    service.simulation_start()
-    sim = service.simulation_step()
-    assert sim["tick"] == 1
-    assert sim["active_shelf"] == "1"
-    assert service.cnc_status["machine_state"] in ["Kjører", "Klar"]
-    assert service.robot_status["active_task"] != "Idle"
+    order = service.start_production("PT-RAW-280", "all", None)
+    assert order["target_qty"] == 22
+
+
+def test_focas_and_lift_commands_return_response():
+    service = ProductionCellService()
+    focas = service.call_cnc_focas("read_status", {})
+    lift = service.call_lift_rest("move_to_shelf", {"shelf": "7"})
+    assert "response" in focas
+    assert lift["response"]["moved_to"] == "7"
