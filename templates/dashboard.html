@@ -1,0 +1,16 @@
+<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Dashboard</title><link rel="stylesheet" href="/static/style.css"/></head>
+<body data-page="dashboard">{% include '_nav.html' %}
+<main>
+<section class="card"><h2>Produksjonsordre</h2>
+<div class="row"><label>Deltype</label><select id="prodPartType"></select></div>
+<div class="row"><label>Modus</label><select id="prodMode"><option value="quantity">Antall</option><option value="all">Alle av type</option></select><input id="prodQty" type="number" value="10"/></div>
+<button id="startProductionBtn">Start produksjon</button><ul id="productionStatus"></ul>
+</section>
+<section class="card"><h2>Fargeinnstillinger status</h2>
+<div class="row"><input id="color_empty" placeholder="empty #hex"/><input id="color_raw" placeholder="raw #hex"/><input id="color_in_process" placeholder="in_process #hex"/></div>
+<div class="row"><input id="color_finished" placeholder="finished #hex"/><input id="color_blocked" placeholder="blocked #hex"/><button id="saveColorsBtn">Lagre farger</button></div>
+</section>
+<section class="card"><h2>Aktiv hylle i hovedbilde</h2><svg id="shelfSvg" viewBox="0 0 1000 450"></svg><p id="shelfInfo"></p></section>
+<section class="card"><h2>Koordinater aktiv hylle</h2><table><thead><tr><th>#</th><th>Deltype</th><th>X</th><th>Y</th><th>Z</th><th>Status</th></tr></thead><tbody id="coordsTable"></tbody></table></section>
+<section class="card"><h2>Simulering</h2><div class="row"><button id="simStartBtn">Start</button><button id="simPauseBtn">Pause</button><button id="simStepBtn">Step</button></div><ul id="simulationStatus"></ul></section>
+</main><script src="/static/app.js"></script></body></html>
