@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Produksjonscelle-kontroll</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Produksjonscelle-kontroll</h1>
+      <p>Lean-Lift 1:1 hyllekart med X/Y/Z-koordinater og hyller 1-50</p>
+    </header>
+
+    <main>
+      <section class="card grid-two">
+        <div>
+          <h2>Settings</h2>
+          <div class="row">
+            <label>Bredde (mm)</label>
+            <input id="shelfWidth" type="number" />
+          </div>
+          <div class="row">
+            <label>Dybde (mm)</label>
+            <input id="shelfDepth" type="number" />
+          </div>
+          <button id="saveSettingsBtn">Lagre settings</button>
+        </div>
+
+        <div>
+          <h2>Produkt / CNC</h2>
+          <div class="row">
+            <select id="productSelect"></select>
+            <button id="selectProductBtn">Sett produkt</button>
+          </div>
+          <p id="activeProduct"></p>
+          <div class="row">
+            <input id="programInput" placeholder="f.eks. O1200" />
+            <button id="selectProgramBtn">Velg CNC-program</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card grid-two">
+        <div>
+          <h2>Velg hylle og mal</h2>
+          <div class="row">
+            <label>Hylle</label>
+            <select id="shelfSelect"></select>
+          </div>
+          <div class="row">
+            <label>Mal</label>
+            <select id="templateSelect"></select>
+            <button id="applyTemplateBtn">Bruk mal på hylle</button>
+          </div>
+        </div>
+        <div>
+          <h2>Maskinstatus</h2>
+          <ul id="robotStatus"></ul>
+          <ul id="cncStatus"></ul>
+        </div>
+      </section>
+
+
+      <section class="card">
+        <h2>Simulering</h2>
+        <div class="row">
+          <button id="simStartBtn">Start simulering</button>
+          <button id="simPauseBtn">Pause simulering</button>
+          <button id="simStepBtn">Kjør ett steg</button>
+        </div>
+        <ul id="simulationStatus"></ul>
+      </section>
+
+      <section class="card">
+        <h2>1:1 hyllekart (skalert)</h2>
+        <svg id="shelfSvg" viewBox="0 0 1000 450"></svg>
+        <p id="shelfInfo"></p>
+      </section>
+
+      <section class="card">
+        <h2>Koordinater for valgt hylle</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Deltype</th><th>Produkt</th><th>Diameter</th><th>X senter (mm)</th><th>Y senter (mm)</th><th>Z høyde (mm)</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="coordsTable"></tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Lag/oppdater mal</h2>
+        <p>JSON-format (samme part_type_id for alle): [{"part_type_id":"PT-RAW-120","x_mm":250,"y_mm":200,"z_mm":95}]</p>
+        <div class="row">
+          <input id="templateNameInput" placeholder="template_name" />
+          <button id="saveTemplateBtn">Lagre mal</button>
+        </div>
+        <textarea id="templateJson" rows="6"></textarea>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
