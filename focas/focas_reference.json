@@ -1,0 +1,4396 @@
+{
+  "functions": [
+    "cnc_actf",
+    "cnc_absolute",
+    "cnc_machine",
+    "cnc_relative",
+    "cnc_distance",
+    "cnc_skip",
+    "cnc_srvdelay",
+    "cnc_accdecdly",
+    "cnc_rddynamic",
+    "cnc_rddynamic2",
+    "cnc_acts",
+    "cnc_acts2",
+    "cnc_wrrelpos",
+    "cnc_prstwkcd",
+    "cnc_rdmovrlap",
+    "cnc_canmovrlap",
+    "cnc_rdspload",
+    "cnc_rdspmaxrpm",
+    "cnc_rdspgear",
+    "cnc_absolute2",
+    "cnc_relative2",
+    "cnc_setvrtclpos",
+    "cnc_setthrdngpos",
+    "cnc_rdposition",
+    "cnc_rdspeed",
+    "cnc_rdsvmeter",
+    "cnc_rdspmeter",
+    "cnc_rd5axmandt",
+    "cnc_rd5axovrlap",
+    "cnc_rdhndintrpt",
+    "cnc_clr5axpls",
+    "cnc_rdspcss",
+    "cnc_rdexecpt",
+    "cnc_rdaxisdata",
+    "cnc_dwnstart",
+    "cnc_download",
+    "cnc_cdownload",
+    "cnc_dwnend",
+    "cnc_dwnend2",
+    "cnc_dwnstart3",
+    "cnc_dwnstart3_f",
+    "cnc_download3",
+    "cnc_dwnend3",
+    "cnc_dwnstart4",
+    "cnc_download4",
+    "cnc_dwnend4",
+    "cnc_vrfstart",
+    "cnc_verify",
+    "cnc_cverify",
+    "cnc_vrfend",
+    "cnc_vrfstart4",
+    "cnc_verify4",
+    "cnc_vrfend4",
+    "cnc_dncstart",
+    "cnc_dnc",
+    "cnc_cdnc",
+    "cnc_dncend",
+    "cnc_dncstart2",
+    "cnc_dnc2",
+    "cnc_dncend2",
+    "cnc_rddncdgndt",
+    "cnc_upstart",
+    "cnc_upload",
+    "cnc_cupload",
+    "cnc_upend",
+    "cnc_upstart3",
+    "cnc_upstart3_f",
+    "cnc_upload3",
+    "cnc_upend3",
+    "cnc_upstart4",
+    "cnc_upload4",
+    "cnc_upend4",
+    "cnc_buff",
+    "cnc_search",
+    "cnc_search2",
+    "cnc_delall",
+    "cnc_delete",
+    "cnc_delrange",
+    "cnc_rdprogdir",
+    "cnc_rdproginfo",
+    "cnc_rdprgnum",
+    "cnc_exeprgname",
+    "cnc_rdseqnum",
+    "cnc_seqsrch",
+    "cnc_seqsrch2",
+    "cnc_rewind",
+    "cnc_rdblkcount",
+    "cnc_rdexecprog",
+    "cnc_rdmdiprog",
+    "cnc_wrmdiprog",
+    "cnc_rdmdipntr",
+    "cnc_wrmdipntr",
+    "cnc_newprog",
+    "cnc_copyprog",
+    "cnc_renameprog",
+    "cnc_condense",
+    "cnc_mergeprog",
+    "cnc_rdactpt",
+    "cnc_rduvactpt",
+    "cnc_wractpt",
+    "cnc_rdprogline",
+    "cnc_rdprogline2",
+    "cnc_wrprogline",
+    "cnc_delprogline",
+    "cnc_searchword",
+    "cnc_searchresult",
+    "cnc_rdpdf_line",
+    "cnc_setpglock",
+    "cnc_resetpglock",
+    "cnc_rdpglockstat",
+    "cnc_pdf_add",
+    "cnc_pdf_cond",
+    "cnc_wrpdf_attr",
+    "cnc_pdf_copy",
+    "cnc_pdf_del",
+    "cnc_wrpdf_line",
+    "cnc_pdf_delline",
+    "cnc_pdf_move",
+    "cnc_pdf_rdactpt",
+    "cnc_pdf_rdmain",
+    "cnc_pdf_rename",
+    "cnc_pdf_searchword",
+    "cnc_pdf_searchresult",
+    "cnc_pdf_slctmain",
+    "cnc_pdf_wractpt",
+    "cnc_rdpdf_inf",
+    "cnc_rdpdf_drive",
+    "cnc_rdpdf_curdir",
+    "cnc_wrpdf_curdir",
+    "cnc_rdpdf_subdir",
+    "cnc_rdpdf_alldir",
+    "cnc_rdpdf_subdirn",
+    "cnc_rdtofs",
+    "cnc_wrtofs",
+    "cnc_rdtofsr",
+    "cnc_wrtofsr",
+    "cnc_rdzofs",
+    "cnc_wrzofs",
+    "cnc_rdzofsr",
+    "cnc_wrzofsr",
+    "cnc_rdmsptype",
+    "cnc_wrmsptype",
+    "cnc_rdparam",
+    "cnc_wrparam",
+    "cnc_rdparar",
+    "cnc_wrparas",
+    "cnc_rdset",
+    "cnc_wrset",
+    "cnc_rdsetr",
+    "cnc_wrsets",
+    "cnc_rdparam_ext",
+    "cnc_rdparam3",
+    "cnc_start_async_wrparam",
+    "cnc_end_async_wrparam",
+    "cnc_async_busy_state",
+    "cnc_rddiag_ext",
+    "cnc_rdpitchr",
+    "cnc_wrpitchr",
+    "cnc_rdmacro",
+    "cnc_wrmacro",
+    "cnc_rdmacror",
+    "cnc_wrmacror",
+    "cnc_rdmacror2",
+    "cnc_wrmacror2",
+    "cnc_rdpmacro",
+    "cnc_wrpmacro",
+    "cnc_rdpmacror",
+    "cnc_wrpmacror",
+    "cnc_rdpmacror2",
+    "cnc_wrpmacror2",
+    "cnc_rdtofsinfo",
+    "cnc_rdtofsinfo2",
+    "cnc_rdzofsinfo",
+    "cnc_rdpitchinfo",
+    "cnc_rdmacroinfo",
+    "cnc_rdpmacroinfo",
+    "cnc_tofs_rnge",
+    "cnc_zofs_rnge",
+    "cnc_wksft_rnge",
+    "cnc_rdhsprminfo",
+    "cnc_rdhsparam",
+    "cnc_rdgrpid",
+    "cnc_rdngrp",
+    "cnc_rdntool",
+    "cnc_rdlife",
+    "cnc_rdcount",
+    "cnc_rd1length",
+    "cnc_rd2length",
+    "cnc_rd1radius",
+    "cnc_rd2radius",
+    "cnc_t1info",
+    "cnc_t2info",
+    "cnc_toolnum",
+    "cnc_rdtoolrng",
+    "cnc_rdtoolgrp",
+    "cnc_wrcountr",
+    "cnc_rdusegrpid",
+    "cnc_rdmaxgrp",
+    "cnc_rdmaxtool",
+    "cnc_rdusetlno",
+    "cnc_rd1tlifedata",
+    "cnc_rd2tlifedata",
+    "cnc_wr1tlifedata",
+    "cnc_wr2tlifedata",
+    "cnc_rdgrpinfo",
+    "cnc_rdgrpinfo2",
+    "cnc_rdgrpinfo3",
+    "cnc_rdgrpinfo4",
+    "cnc_wrgrpinfo",
+    "cnc_wrgrpinfo2",
+    "cnc_wrgrpinfo3",
+    "cnc_deltlifegrp",
+    "cnc_instlifedt",
+    "cnc_deltlifedt",
+    "cnc_clrcntinfo",
+    "cnc_rdgrpid2",
+    "cnc_rd1tlifedat2",
+    "cnc_wr1tlifedat2",
+    "cnc_rdtlinfo",
+    "cnc_rdtlusegrp",
+    "cnc_rdtlgrp",
+    "cnc_rdtltool",
+    "cnc_rdexchgtgrp",
+    "cnc_regtool",
+    "cnc_regtool_f2",
+    "cnc_deltool",
+    "cnc_rdtool",
+    "cnc_rdtool_f2",
+    "cnc_wrtool",
+    "cnc_wrtool2",
+    "cnc_wrtool_f2",
+    "cnc_regmagazine",
+    "cnc_delmagazine",
+    "cnc_rdmagazine",
+    "cnc_wrmagazine",
+    "cnc_stopophis",
+    "cnc_startophis",
+    "cnc_rdophisno",
+    "cnc_rdophistry",
+    "cnc_rdophistry2",
+    "cnc_rdophistry4",
+    "cnc_rdalmhisno",
+    "cnc_rdalmhistry",
+    "cnc_rdalmhistry_w",
+    "cnc_rdalmhistry2",
+    "cnc_rdalmhistry3",
+    "cnc_rdalmhistry5",
+    "cnc_clearophis",
+    "cnc_rdhissgnl",
+    "cnc_rdhissgnl2",
+    "cnc_rdhissgnl3",
+    "cnc_wrhissgnl",
+    "cnc_wrhissgnl2",
+    "cnc_wrhissgnl3",
+    "cnc_rdomhisno",
+    "cnc_sysinfo",
+    "cnc_statinfo",
+    "cnc_alarm",
+    "cnc_alarm2",
+    "cnc_rdalminfo",
+    "cnc_rdalmmsg",
+    "cnc_rdalmmsg2",
+    "cnc_clralm",
+    "cnc_modal",
+    "cnc_rdgcode",
+    "cnc_rdcommand",
+    "cnc_diagnoss",
+    "cnc_diagnosr",
+    "cnc_adcnv",
+    "cnc_rdopmsg",
+    "cnc_rdopmsg2",
+    "cnc_rdopmsg3",
+    "cnc_setpath",
+    "cnc_getpath",
+    "cnc_allclibhndl",
+    "cnc_freelibhndl",
+    "cnc_getlibopt",
+    "cnc_setlibopt",
+    "cnc_getmactype",
+    "cnc_setmactype",
+    "cnc_getpmactype",
+    "cnc_setpmactype",
+    "cnc_getcrntscrn",
+    "cnc_slctscrn",
+    "cnc_sysconfig",
+    "cnc_rdprstrinfo",
+    "cnc_rstrseqsrch",
+    "cnc_rstrseqsrch2",
+    "cnc_rdopnlsgnl",
+    "cnc_wropnlsgnl",
+    "cnc_rdopnlgnrl",
+    "cnc_wropnlgnrl",
+    "cnc_rdopnlgsname",
+    "cnc_wropnlgsname",
+    "cnc_getdtailerr",
+    "cnc_rdparainfo",
+    "cnc_rdsetinfo",
+    "cnc_rddiaginfo",
+    "cnc_rdparanum",
+    "cnc_rdsetnum",
+    "cnc_rddiagnum",
+    "cnc_getfigure",
+    "cnc_rdfrominfo",
+    "cnc_fromsvstart",
+    "cnc_fromsave",
+    "cnc_fromsvend",
+    "cnc_fromldstart",
+    "cnc_fromload",
+    "cnc_fromldend",
+    "cnc_fromdelete",
+    "cnc_rdsraminfo",
+    "cnc_srambkstart",
+    "cnc_srambackup",
+    "cnc_srambkend",
+    "cnc_getfrominfo",
+    "cnc_fromgetstart",
+    "cnc_fromget",
+    "cnc_fromgetend",
+    "cnc_fromputstart",
+    "cnc_fromput",
+    "cnc_fromputend",
+    "cnc_fromremove",
+    "cnc_getsraminfo",
+    "cnc_sramgetstart",
+    "cnc_sramgetstart2",
+    "cnc_sramget",
+    "cnc_sramget2",
+    "cnc_sramgetend",
+    "cnc_sramgetend2",
+    "cnc_rdsramnum",
+    "cnc_rdsramaddr",
+    "cnc_getlockstat",
+    "cnc_chgprotbit",
+    "cnc_dtsvftpget",
+    "cnc_dtsvftpput",
+    "cnc_dtsvftpstat",
+    "cnc_dtsvrdpgdir",
+    "cnc_dtsvdelete",
+    "cnc_dtsvdownload",
+    "cnc_dtsvupload",
+    "cnc_dtsvcnclupdn",
+    "cnc_dtsvupdnstat",
+    "cnc_dtsvgetdncpg",
+    "cnc_dtsvsetdncpg",
+    "cnc_dtsvrdset",
+    "cnc_dtsvwrset",
+    "cnc_dtsvchkdsk",
+    "cnc_dtsvhdformat",
+    "cnc_dtsvsavecram",
+    "cnc_dtsvrdcram",
+    "cnc_dtsvmntinfo",
+    "cnc_dtsvgetmode",
+    "cnc_dtsvsetmode",
+    "cnc_dtsvrderrmsg",
+    "cnc_dtsvwrfile",
+    "cnc_dtsvrdfile",
+    "cnc_rdloopgain",
+    "cnc_rdcurrent",
+    "cnc_rdsrvspeed",
+    "cnc_rdopmode",
+    "cnc_rdposerrs",
+    "cnc_rdposerrs2",
+    "cnc_rdposerrz",
+    "cnc_rdsynerrsy",
+    "cnc_rdsynerrrg",
+    "cnc_rdspdlalm",
+    "cnc_rdctrldi",
+    "cnc_rdctrldo",
+    "cnc_rdnspdl",
+    "cnc_rdfbusmem",
+    "cnc_wrfbusmem",
+    "cnc_rdwaveprm",
+    "cnc_wrwaveprm",
+    "cnc_rdwaveprm2",
+    "cnc_wrwaveprm2",
+    "cnc_wavestart",
+    "cnc_wavestop",
+    "cnc_wavestat",
+    "cnc_rdwavedata",
+    "cnc_rdrmtwaveprm",
+    "cnc_wrrmtwaveprm",
+    "cnc_rmtwavestart",
+    "cnc_rmtwavestop",
+    "cnc_rmtwavestat",
+    "cnc_rdrmtwavedt",
+    "cnc_rdsavsigadr",
+    "cnc_wrsavsigadr",
+    "cnc_rdsavsigdata",
+    "cnc_rdmgrpdata",
+    "cnc_wrmgrpdata",
+    "cnc_rdexecmcode",
+    "cnc_rdrstrmcode",
+    "cnc_rdproctime",
+    "cnc_rdmdiprgstat",
+    "cnc_rdprgdirtime",
+    "cnc_rdprogdir2",
+    "cnc_rdprogdir3",
+    "cnc_rdprogdir4",
+    "cnc_rddncfname",
+    "cnc_wrdncfname",
+    "cnc_rdcomparam",
+    "cnc_wrcomparam",
+    "cnc_rdcomlogmsg",
+    "cnc_rdcomopemsg",
+    "cnc_rdrcvmsg",
+    "cnc_rdsndmsg",
+    "cnc_sendmessage",
+    "cnc_clrmsgbuff",
+    "cnc_rdrcvstat",
+    "cnc_rdintchk",
+    "cnc_wrintchk",
+    "cnc_rdintinfo",
+    "cnc_rdwkcdshft",
+    "cnc_wrwkcdshft",
+    "cnc_rdwkcdsfms",
+    "cnc_wrwkcdsfms",
+    "cnc_stopomhis",
+    "cnc_startomhis",
+    "cnc_rdomhisinfo",
+    "cnc_rdomhistry",
+    "cnc_rdomhistry2",
+    "cnc_wrkeyhistry",
+    "cnc_clearomhis",
+    "cnc_rdbtofsr",
+    "cnc_wrbtofsr",
+    "cnc_rdbtofsinfo",
+    "cnc_rdbaxis",
+    "cnc_rdsyssoft",
+    "cnc_rdsyssoft2",
+    "cnc_rdmdlconfig",
+    "cnc_rdmdlconfig2",
+    "cnc_rdpscdproc",
+    "cnc_wrpscdproc",
+    "cnc_rdpscdpirc",
+    "cnc_wrpscdpirc",
+    "cnc_rdpscdedge",
+    "cnc_wrpscdedge",
+    "cnc_rdpscdslop",
+    "cnc_wrpscdslop",
+    "cnc_rdlpwrdty",
+    "cnc_wrlpwrdty",
+    "cnc_rdlpwrdat",
+    "cnc_rdlpwrcpst",
+    "cnc_wrlpwrcpst",
+    "cnc_rdlagslt",
+    "cnc_wrlagslt",
+    "cnc_rdlagst",
+    "cnc_wrlagst",
+    "cnc_rdledgprc",
+    "cnc_wrledgprc",
+    "cnc_rdlprcprc",
+    "cnc_wrlprcprc",
+    "cnc_rdlcmddat",
+    "cnc_rdldsplc",
+    "cnc_wrldsplc",
+    "cnc_rdlerrz",
+    "cnc_rdlactnum",
+    "cnc_rdlcmmt",
+    "cnc_rdlpwrslt",
+    "cnc_wrlpwrslt",
+    "cnc_rdlpwrctrl",
+    "cnc_wrlpwrctrl",
+    "cnc_rdpwofsthis",
+    "cnc_rdmngtime",
+    "cnc_wrmngtime",
+    "cnc_rddischarge",
+    "cnc_rddischrgalm",
+    "cnc_gettimer",
+    "cnc_settimer",
+    "cnc_rdtimer",
+    "cnc_wrtimer",
+    "cnc_rdtlctldata",
+    "cnc_wrtlctldata",
+    "cnc_rdtooldata",
+    "cnc_wrtooldata",
+    "cnc_rdmultitldt",
+    "cnc_wrmultitldt",
+    "cnc_rdmtapdata",
+    "cnc_wrmtapdata",
+    "cnc_rdmultipieceno",
+    "cnc_rdtoolinfo",
+    "cnc_rdsafetyzone",
+    "cnc_wrsafetyzone",
+    "cnc_rdtoolzone",
+    "cnc_wrtoolzone",
+    "cnc_rdacttlzone",
+    "cnc_rdsetzone",
+    "cnc_wrsetzone",
+    "cnc_rdbrstrinfo",
+    "cnc_rdmenuswitch",
+    "cnc_wrmenuswitch",
+    "cnc_rdradofs",
+    "cnc_rdlenofs",
+    "cnc_rdfixcycle",
+    "cnc_rdcdrotate",
+    "cnc_rd3dcdcnv",
+    "cnc_rdmirimage",
+    "cnc_rdscaling",
+    "cnc_rd3dtofs",
+    "cnc_rdposofs",
+    "cnc_rdhpccset",
+    "cnc_wrhpccset",
+    "cnc_hpccatset",
+    "cnc_rdhpcctupr",
+    "cnc_wrhpcctupr",
+    "cnc_rdhpcctuac",
+    "cnc_wrhpcctuac",
+    "cnc_hpccattune",
+    "cnc_hpccactfine",
+    "cnc_hpccselfine",
+    "cnc_rdactfixofs",
+    "cnc_rdfixofs",
+    "cnc_wrfixofs",
+    "cnc_rd3dtooltip",
+    "cnc_rd3dpulse",
+    "cnc_rd3dmovrlap",
+    "cnc_rd3dofschg",
+    "cnc_clr3dplsmov",
+    "cnc_start",
+    "cnc_reset",
+    "cnc_reset2",
+    "cnc_rdaxisname",
+    "cnc_rdspdlname",
+    "cnc_exaxisname",
+    "cnc_rdcexesram",
+    "cnc_wrcexesram",
+    "cnc_cexesraminfo",
+    "cnc_cexesramsize",
+    "cnc_rdcoordnum",
+    "cnc_ftosjis",
+    "cnc_wrunsolicprm",
+    "cnc_rdunsolicprm",
+    "cnc_wrunsolicprm2",
+    "cnc_rdunsolicprm2",
+    "cnc_unsolicstart",
+    "cnc_unsolicstop",
+    "cnc_rdunsolicmsg",
+    "cnc_rdunsolicmsg2",
+    "cnc_rdpm_mcnitem",
+    "cnc_wrpm_mcnitem",
+    "cnc_rdpm_cncitem",
+    "cnc_rdpm_item",
+    "cnc_wrpm_item",
+    "cnc_dispoptmsg",
+    "cnc_optmsgans",
+    "cnc_getcncmodel",
+    "cnc_rdrepeatval",
+    "cnc_rdsyshard",
+    "cnc_rdsyssoft3",
+    "cnc_progdigit",
+    "cnc_sysinfo_ex",
+    "cnc_srcsrsvchnl",
+    "cnc_srcsrdidinfo",
+    "cnc_srcswridinfo",
+    "cnc_srcsstartrd",
+    "cnc_srcsstartwrt",
+    "cnc_srcsstopexec",
+    "cnc_srcsrdexstat",
+    "cnc_srcsrdopdata",
+    "cnc_srcswropdata",
+    "cnc_srcsfreechnl",
+    "cnc_srcsrdlayout",
+    "cnc_srcsrddrvcp",
+    "cnc_startdrawpos",
+    "cnc_stopdrawpos",
+    "cnc_startdyngrph",
+    "cnc_stopdyngrph",
+    "cnc_rdgrphcmd",
+    "cnc_wrgrphcmdptr",
+    "cnc_rdgrphcanflg",
+    "cnc_clrgrphcmd",
+    "cnc_svdtstartrd",
+    "cnc_svdtstartwr",
+    "cnc_svdtendrd",
+    "cnc_svdtendwr",
+    "cnc_svdtstopexec",
+    "cnc_svdtrddata",
+    "cnc_svdtwrdata",
+    "cnc_sdsetchnl",
+    "cnc_sdclrchnl",
+    "cnc_sdstartsmpl",
+    "cnc_sdcancelsmpl",
+    "cnc_sdreadsmpl",
+    "cnc_sdendsmpl",
+    "cnc_sdread1shot",
+    "cnc_sfbsetchnl",
+    "cnc_sfbclrchnl",
+    "cnc_sfbstartsmpl",
+    "cnc_sfbcancelsmpl",
+    "cnc_sfbreadsmpl",
+    "cnc_sfbendsmpl",
+    "cnc_startnccmd",
+    "cnc_startnccmd2",
+    "cnc_stopnccmd",
+    "cnc_getdspmode",
+    "cnc_startrmtdgn",
+    "cnc_stoprmtdgn",
+    "cnc_rdrmtdgn",
+    "cnc_wrrmtdgn",
+    "cnc_wrcommstatus",
+    "cnc_chkrmtdgn",
+    "cnc_allowance",
+    "cnc_allowcnd",
+    "cnc_workzero",
+    "cnc_slide",
+    "cnc_startgetdgdat",
+    "cnc_stopgetdgdat",
+    "cnc_rddgdat",
+    "cnc_wrdgdatptr",
+    "cnc_clrdgdat",
+    "cnc_opencexefile",
+    "cnc_closecexefile",
+    "cnc_rdcexefile",
+    "cnc_wrcexefile",
+    "cnc_cexedirectory",
+    "pmc_rdmsg",
+    "pmc_wrmsg",
+    "pmc_crdmsg",
+    "pmc_cwrmsg",
+    "pmc_rdpmcrng",
+    "pmc_wrpmcrng",
+    "pmc_rdkpm",
+    "pmc_wrkpm",
+    "pmc_rdkpm2",
+    "pmc_wrkpm2",
+    "pmc_kpmsiz",
+    "pmc_rdpmcinfo",
+    "pmc_rdcntldata",
+    "pmc_wrcntldata",
+    "pmc_rdcntlgrp",
+    "pmc_wrcntlgrp",
+    "pmc_rdalmmsg",
+    "pmc_getdtailerr",
+    "pmc_rdpmcmem",
+    "pmc_wrpmcmem",
+    "pmc_rdpmcsemem",
+    "pmc_wrpmcsemem",
+    "pmc_rdpmctitle",
+    "pmc_rdprmstart",
+    "pmc_rdpmcparam",
+    "pmc_rdprmend",
+    "pmc_wrprmstart",
+    "pmc_wrpmcparam",
+    "pmc_wrprmend",
+    "pmc_rdpmcrng_ext",
+    "pmc_wriolinkdat",
+    "pmc_rdpmcaddr",
+    "pmc_select_pmc_unit",
+    "pmc_get_current_pmc_unit",
+    "pmc_get_number_of_pmc",
+    "pmc_get_pmc_unit_types",
+    "pmc_set_timer_type",
+    "pmc_get_timer_type",
+    "pmc_prfrdconfig",
+    "pmc_prfrdbusprm",
+    "pmc_prfwrbusprm",
+    "pmc_prfrdslvprm",
+    "pmc_prfwrslvprm",
+    "pmc_prfrdallcadr",
+    "pmc_prfwrallcadr",
+    "pmc_prfrdslvaddr",
+    "pmc_prfwrslvaddr",
+    "pmc_prfrdslvstat",
+    "pmc_prfrdslvid",
+    "pmc_prfwrslvid",
+    "pmc_prfrdslvprm2",
+    "pmc_prfwrslvprm2",
+    "pmc_prfrddido",
+    "pmc_prfwrdido",
+    "pmc_prfrdindiadr",
+    "pmc_prfwrindiadr",
+    "pmc_prfrdopmode",
+    "pmc_prfwropmode",
+    "cnc_rdnodenum",
+    "cnc_rdnodeinfo",
+    "cnc_setdefnode",
+    "cnc_allclibhndl2",
+    "cnc_allclibhndl3",
+    "cnc_allclibhndl4",
+    "cnc_settimeout",
+    "cnc_resetconnect",
+    "cnc_getfocas1opt",
+    "cnc_rdetherinfo"
+  ],
+  "params": {
+    "cnc_actf": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_absolute": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_machine": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_relative": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_distance": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_skip": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srvdelay": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_accdecdly": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddynamic": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddynamic2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_acts": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_acts2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrrelpos": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_prstwkcd": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmovrlap": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_canmovrlap": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdspload": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdspmaxrpm": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdspgear": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_absolute2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_relative2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_setvrtclpos": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_setthrdngpos": [
+      "FlibHndl"
+    ],
+    "cnc_rdposition": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdspeed": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsvmeter": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdspmeter": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd5axmandt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd5axovrlap": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhndintrpt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_clr5axpls": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdspcss": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdexecpt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdaxisdata": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dwnstart": [
+      "FlibHndl"
+    ],
+    "cnc_download": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_cdownload": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dwnend": [
+      "FlibHndl"
+    ],
+    "cnc_dwnend2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dwnstart3": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_dwnstart3_f": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_download3": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dwnend3": [
+      "FlibHndl"
+    ],
+    "cnc_dwnstart4": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_download4": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dwnend4": [
+      "FlibHndl"
+    ],
+    "cnc_vrfstart": [
+      "FlibHndl"
+    ],
+    "cnc_verify": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_cverify": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_vrfend": [
+      "FlibHndl"
+    ],
+    "cnc_vrfstart4": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_verify4": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_vrfend4": [
+      "FlibHndl"
+    ],
+    "cnc_dncstart": [
+      "FlibHndl"
+    ],
+    "cnc_dnc": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_cdnc": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dncend": [
+      "FlibHndl"
+    ],
+    "cnc_dncstart2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dnc2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dncend2": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rddncdgndt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_upstart": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_upload": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_cupload": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_upend": [
+      "FlibHndl"
+    ],
+    "cnc_upstart3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_upstart3_f": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_upload3": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_upend3": [
+      "FlibHndl"
+    ],
+    "cnc_upstart4": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_upload4": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_upend4": [
+      "FlibHndl"
+    ],
+    "cnc_buff": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_search": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_search2": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_delall": [
+      "FlibHndl"
+    ],
+    "cnc_delete": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_delrange": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdprogdir": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdproginfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdprgnum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_exeprgname": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdseqnum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_seqsrch": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_seqsrch2": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rewind": [
+      "FlibHndl"
+    ],
+    "cnc_rdblkcount": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdexecprog": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdmdiprog": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrmdiprog": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdmdipntr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmdipntr": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_newprog": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_copyprog": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_renameprog": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_condense": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_mergeprog": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "cnc_rdactpt": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rduvactpt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_wractpt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_rdprogline": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdprogline2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrprogline": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_delprogline": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_searchword": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_searchresult": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdpdf_line": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_setpglock": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_resetpglock": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdpglockstat": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_pdf_add": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_cond": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrpdf_attr": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_copy": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_del": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrpdf_line": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_delline": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_move": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_rdactpt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_rdmain": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_rename": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_searchword": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_searchresult": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_pdf_slctmain": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_pdf_wractpt": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpdf_inf": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpdf_drive": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpdf_curdir": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrpdf_curdir": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpdf_subdir": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpdf_alldir": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpdf_subdirn": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdtofs": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtofs": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "cnc_rdtofsr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtofsr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdzofs": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrzofs": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdzofsr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrzofsr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmsptype": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmsptype": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdparam": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrparam": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdparar": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrparas": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdset": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrset": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsetr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrsets": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdparam_ext": [
+      "FlibHndl",
+      "[In",
+      "Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdparam3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_start_async_wrparam": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_end_async_wrparam": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_async_busy_state": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rddiag_ext": [
+      "FlibHndl",
+      "[In",
+      "Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpitchr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpitchr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmacro": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmacro": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "cnc_rdmacror": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmacror": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmacror2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrmacror2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpmacro": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpmacro": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_rdpmacror": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpmacror": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpmacror2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrpmacror2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdtofsinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtofsinfo2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdzofsinfo": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdpitchinfo": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdmacroinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpmacroinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_tofs_rnge": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_zofs_rnge": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wksft_rnge": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhsprminfo": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhsparam": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgrpid": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdngrp": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdntool": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlife": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdcount": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd1length": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd2length": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd1radius": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd2radius": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_t1info": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_t2info": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_toolnum": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtoolrng": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtoolgrp": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrcountr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdusegrpid": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmaxgrp": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmaxtool": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdusetlno": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd1tlifedata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd2tlifedata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wr1tlifedata": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wr2tlifedata": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgrpinfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgrpinfo2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgrpinfo3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgrpinfo4": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrgrpinfo": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrgrpinfo2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrgrpinfo3": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_deltlifegrp": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_instlifedt": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_deltlifedt": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_clrcntinfo": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdgrpid2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd1tlifedat2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wr1tlifedat2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtlinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtlusegrp": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtlgrp": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtltool": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdexchgtgrp": [
+      "FlibHndl",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_regtool": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_regtool_f2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_deltool": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdtool": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtool_f2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtool": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtool2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtool_f2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_regmagazine": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_delmagazine": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmagazine": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmagazine": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_stopophis": [
+      "FlibHndl"
+    ],
+    "cnc_startophis": [
+      "FlibHndl"
+    ],
+    "cnc_rdophisno": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdophistry": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdophistry2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdophistry4": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmhisno": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdalmhistry": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmhistry_w": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmhistry2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmhistry3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmhistry5": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_clearophis": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdhissgnl": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhissgnl2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhissgnl3": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhissgnl": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhissgnl2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhissgnl3": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdomhisno": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_sysinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_statinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_alarm": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_alarm2": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdalminfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmmsg": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdalmmsg2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_clralm": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_modal": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdgcode": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdcommand": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_diagnoss": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_diagnosr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_adcnv": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdopmsg": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdopmsg2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdopmsg3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_setpath": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_getpath": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_allclibhndl": [
+      "FlibHndl"
+    ],
+    "cnc_freelibhndl": [
+      "FlibHndl"
+    ],
+    "cnc_getlibopt": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_setlibopt": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_getmactype": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_setmactype": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_getpmactype": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_setpmactype": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_getcrntscrn": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_slctscrn": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_sysconfig": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdprstrinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rstrseqsrch": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "cnc_rstrseqsrch2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "e"
+    ],
+    "cnc_rdopnlsgnl": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wropnlsgnl": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdopnlgnrl": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wropnlgnrl": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdopnlgsname": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wropnlgsname": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_getdtailerr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdparainfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsetinfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddiaginfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdparanum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsetnum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddiagnum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_getfigure": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdfrominfo": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_fromsvstart": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromsave": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromsvend": [
+      "FlibHndl"
+    ],
+    "cnc_fromldstart": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_fromload": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromldend": [
+      "FlibHndl"
+    ],
+    "cnc_fromdelete": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdsraminfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srambkstart": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_srambackup": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_srambkend": [
+      "FlibHndl"
+    ],
+    "cnc_getfrominfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_fromgetstart": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromget": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromgetend": [
+      "FlibHndl"
+    ],
+    "cnc_fromputstart": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_fromput": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_fromputend": [
+      "FlibHndl"
+    ],
+    "cnc_fromremove": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_getsraminfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_sramgetstart": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sramgetstart2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sramget": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sramget2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sramgetend": [
+      "FlibHndl"
+    ],
+    "cnc_sramgetend2": [
+      "FlibHndl"
+    ],
+    "cnc_rdsramnum": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdsramaddr": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_getlockstat": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_chgprotbit": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_dtsvftpget": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvftpput": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvftpstat": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvrdpgdir": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvdelete": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvdownload": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvupload": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvcnclupdn": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvupdnstat": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvgetdncpg": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvsetdncpg": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvrdset": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_dtsvwrset": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_dtsvchkdsk": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvhdformat": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvsavecram": [
+      "FlibHndl"
+    ],
+    "cnc_dtsvrdcram": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvmntinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_dtsvgetmode": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_dtsvsetmode": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_dtsvrderrmsg": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvwrfile": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_dtsvrdfile": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdloopgain": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdcurrent": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdsrvspeed": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdopmode": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdposerrs": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdposerrs2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdposerrz": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdsynerrsy": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdsynerrrg": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdspdlalm": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdctrldi": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdctrldo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdnspdl": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdfbusmem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrfbusmem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdwaveprm": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrwaveprm": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdwaveprm2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrwaveprm2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wavestart": [
+      "FlibHndl"
+    ],
+    "cnc_wavestop": [
+      "FlibHndl"
+    ],
+    "cnc_wavestat": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdwavedata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdrmtwaveprm": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrrmtwaveprm": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rmtwavestart": [
+      "FlibHndl"
+    ],
+    "cnc_rmtwavestop": [
+      "FlibHndl"
+    ],
+    "cnc_rmtwavestat": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdrmtwavedt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsavsigadr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrsavsigadr": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsavsigdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdmgrpdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmgrpdata": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdexecmcode": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdrstrmcode": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdproctime": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmdiprgstat": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdprgdirtime": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdprogdir2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdprogdir3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdprogdir4": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddncfname": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrdncfname": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdcomparam": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrcomparam": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdcomlogmsg": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdcomopemsg": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdrcvmsg": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdsndmsg": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sendmessage": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_clrmsgbuff": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdrcvstat": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdintchk": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrintchk": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdintinfo": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdwkcdshft": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrwkcdshft": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdwkcdsfms": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrwkcdsfms": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_stopomhis": [
+      "FlibHndl"
+    ],
+    "cnc_startomhis": [
+      "FlibHndl"
+    ],
+    "cnc_rdomhisinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdomhistry": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdomhistry2": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrkeyhistry": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_clearomhis": [
+      "FlibHndl"
+    ],
+    "cnc_rdbtofsr": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrbtofsr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdbtofsinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdbaxis": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsyssoft": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsyssoft2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmdlconfig": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmdlconfig2": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_rdpscdproc": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpscdproc": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpscdpirc": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpscdpirc": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpscdedge": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpscdedge": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpscdslop": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpscdslop": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlpwrdty": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrlpwrdty": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlpwrdat": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlpwrcpst": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrlpwrcpst": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdlagslt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrlagslt": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlagst": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrlagst": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdledgprc": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrledgprc": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlprcprc": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrlprcprc": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlcmddat": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdldsplc": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrldsplc": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdlerrz": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdlactnum": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlcmmt": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlpwrslt": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrlpwrslt": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdlpwrctrl": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrlpwrctrl": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdpwofsthis": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmngtime": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmngtime": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddischarge": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rddischrgalm": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_gettimer": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_settimer": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtimer": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtimer": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtlctldata": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtlctldata": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtooldata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtooldata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmultitldt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmultitldt": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmtapdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrmtapdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmultipieceno": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdtoolinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsafetyzone": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrsafetyzone": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdtoolzone": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrtoolzone": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdacttlzone": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsetzone": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrsetzone": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdbrstrinfo": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmenuswitch": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_wrmenuswitch": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdradofs": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdlenofs": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdfixcycle": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdcdrotate": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dcdcnv": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdmirimage": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdscaling": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dtofs": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdposofs": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhpccset": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhpccset": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_hpccatset": [
+      "FlibHndl"
+    ],
+    "cnc_rdhpcctupr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhpcctupr": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdhpcctuac": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrhpcctuac": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_hpccattune": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_hpccactfine": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_hpccselfine": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdactfixofs": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdfixofs": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrfixofs": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dtooltip": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dpulse": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dmovrlap": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rd3dofschg": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_clr3dplsmov": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_start": [
+      "FlibHndl"
+    ],
+    "cnc_reset": [
+      "FlibHndl"
+    ],
+    "cnc_reset2": [
+      "FlibHndl"
+    ],
+    "cnc_rdaxisname": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdspdlname": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_exaxisname": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdcexesram": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrcexesram": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_cexesraminfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "cnc_cexesramsize": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdcoordnum": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_ftosjis": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrunsolicprm": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdunsolicprm": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrunsolicprm2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdunsolicprm2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_unsolicstart": [
+      "FlibHndl",
+      "a",
+      "hWnd",
+      "c",
+      "d",
+      "e"
+    ],
+    "cnc_unsolicstop": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdunsolicmsg": [
+      "a",
+      "[In",
+      "b"
+    ],
+    "cnc_rdunsolicmsg2": [
+      "a",
+      "[In",
+      "b"
+    ],
+    "cnc_rdpm_mcnitem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpm_mcnitem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpm_cncitem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdpm_item": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_wrpm_item": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_dispoptmsg": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_optmsgans": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_getcncmodel": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdrepeatval": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdsyshard": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_rdsyssoft3": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_progdigit": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_sysinfo_ex": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srcsrsvchnl": [
+      "FlibHndl"
+    ],
+    "cnc_srcsrdidinfo": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_srcswridinfo": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srcsstartrd": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_srcsstartwrt": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_srcsstopexec": [
+      "FlibHndl"
+    ],
+    "cnc_srcsrdexstat": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srcsrdopdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_srcswropdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_srcsfreechnl": [
+      "FlibHndl"
+    ],
+    "cnc_srcsrdlayout": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_srcsrddrvcp": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_startdrawpos": [
+      "FlibHndl"
+    ],
+    "cnc_stopdrawpos": [
+      "FlibHndl"
+    ],
+    "cnc_startdyngrph": [
+      "FlibHndl"
+    ],
+    "cnc_stopdyngrph": [
+      "FlibHndl"
+    ],
+    "cnc_rdgrphcmd": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrgrphcmdptr": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_rdgrphcanflg": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_clrgrphcmd": [
+      "FlibHndl"
+    ],
+    "cnc_svdtstartrd": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_svdtstartwr": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_svdtendrd": [
+      "FlibHndl"
+    ],
+    "cnc_svdtendwr": [
+      "FlibHndl"
+    ],
+    "cnc_svdtstopexec": [
+      "FlibHndl"
+    ],
+    "cnc_svdtrddata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_svdtwrdata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sdsetchnl": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_sdclrchnl": [
+      "FlibHndl"
+    ],
+    "cnc_sdstartsmpl": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sdcancelsmpl": [
+      "FlibHndl"
+    ],
+    "cnc_sdreadsmpl": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_sdendsmpl": [
+      "FlibHndl"
+    ],
+    "cnc_sdread1shot": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_sfbsetchnl": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_sfbclrchnl": [
+      "FlibHndl"
+    ],
+    "cnc_sfbstartsmpl": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_sfbcancelsmpl": [
+      "FlibHndl"
+    ],
+    "cnc_sfbreadsmpl": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_sfbendsmpl": [
+      "FlibHndl"
+    ],
+    "cnc_startnccmd": [
+      "FlibHndl"
+    ],
+    "cnc_startnccmd2": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_stopnccmd": [
+      "FlibHndl"
+    ],
+    "cnc_getdspmode": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_startrmtdgn": [
+      "FlibHndl"
+    ],
+    "cnc_stoprmtdgn": [
+      "FlibHndl"
+    ],
+    "cnc_rdrmtdgn": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrrmtdgn": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrcommstatus": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_chkrmtdgn": [
+      "FlibHndl"
+    ],
+    "cnc_allowance": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_allowcnd": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_workzero": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_slide": [
+      "FlibHndl",
+      "a",
+      "b",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_startgetdgdat": [
+      "FlibHndl"
+    ],
+    "cnc_stopgetdgdat": [
+      "FlibHndl"
+    ],
+    "cnc_rddgdat": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrdgdatptr": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_clrdgdat": [
+      "FlibHndl"
+    ],
+    "cnc_opencexefile": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_closecexefile": [
+      "FlibHndl"
+    ],
+    "cnc_rdcexefile": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_wrcexefile": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_cexedirectory": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdmsg": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrmsg": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_crdmsg": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_cwrmsg": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdpmcrng": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_wrpmcrng": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_rdkpm": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrkpm": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdkpm2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrkpm2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_kpmsiz": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_rdpmcinfo": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_rdcntldata": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_wrcntldata": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_rdcntlgrp": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_wrcntlgrp": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_rdalmmsg": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_getdtailerr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_rdpmcmem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrpmcmem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdpmcsemem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrpmcsemem": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdpmctitle": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_rdprmstart": [
+      "FlibHndl"
+    ],
+    "pmc_rdpmcparam": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdprmend": [
+      "FlibHndl"
+    ],
+    "pmc_wrprmstart": [
+      "FlibHndl"
+    ],
+    "pmc_wrpmcparam": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_wrprmend": [
+      "FlibHndl"
+    ],
+    "pmc_rdpmcrng_ext": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_wriolinkdat": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "pmc_rdpmcaddr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_select_pmc_unit": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_get_current_pmc_unit": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_get_number_of_pmc": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_get_pmc_unit_types": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "pmc_set_timer_type": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "pmc_get_timer_type": [
+      "FlibHndl",
+      "a",
+      "b",
+      "c"
+    ],
+    "pmc_prfrdconfig": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdbusprm": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrbusprm": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdslvprm": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrslvprm": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdallcadr": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrallcadr": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdslvaddr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrslvaddr": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdslvstat": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdslvid": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrslvid": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdslvprm2": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrslvprm2": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrddido": [
+      "FlibHndl",
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrdido": [
+      "FlibHndl",
+      "a",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdindiadr": [
+      "FlibHndl",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfwrindiadr": [
+      "FlibHndl",
+      "[In",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "pmc_prfrdopmode": [
+      "FlibHndl",
+      "a"
+    ],
+    "pmc_prfwropmode": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdnodenum": [
+      "a"
+    ],
+    "cnc_rdnodeinfo": [
+      "a",
+      "[Out",
+      "MarshalAs(UnmanagedType.LPStruct"
+    ],
+    "cnc_setdefnode": [
+      "a"
+    ],
+    "cnc_allclibhndl2": [
+      "node",
+      "FlibHndl"
+    ],
+    "cnc_allclibhndl3": [
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_allclibhndl4": [
+      "[In",
+      "MarshalAs(UnmanagedType.AsAny"
+    ],
+    "cnc_settimeout": [
+      "FlibHndl",
+      "a"
+    ],
+    "cnc_resetconnect": [
+      "FlibHndl"
+    ],
+    "cnc_getfocas1opt": [
+      "FlibHndl",
+      "a",
+      "b"
+    ],
+    "cnc_rdetherinfo": [
+      "FlibHndl",
+      "a",
+      "b"
+    ]
+  }
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-import re
+import json
 from typing import Dict, List
 
 from flask import Flask, jsonify, render_template, request
@@ -89,54 +89,22 @@ class ProductionCellService:
         return pt
 
     def _load_focas_reference(self) -> tuple[list[str], dict[str, list[str]]]:
-        cs_path = Path("focas") / "Dot NET sample" / "fwlib64.cs"
-        if not cs_path.exists():
-            fallback = ["cnc_statinfo", "cnc_rdparam", "cnc_wrparam", "cnc_rdmacro", "cnc_wrmacro", "cnc_rdalmmsg2"]
-            return fallback, {fn: [] for fn in fallback}
+        json_path = Path("focas") / "focas_reference.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            return data.get("functions", []), data.get("params", {})
 
-        content = cs_path.read_text(encoding="utf-8", errors="ignore")
-        matches = re.findall(r"extern\s+short\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)", content)
-        functions: list[str] = []
-        params: dict[str, list[str]] = {}
-        for name, signature in matches:
-            if not name.startswith(("cnc_", "pmc_", "op_", "sys_")):
-                continue
-            if name not in functions:
-                functions.append(name)
-            param_names = []
-            for raw in [p.strip() for p in signature.split(",") if p.strip()]:
-                token = raw.split()[-1].replace("*", "").replace("[]", "")
-                token = token.strip()
-                if token:
-                    param_names.append(token)
-            params[name] = param_names
-        return functions, params
+        fallback = ["cnc_statinfo", "cnc_rdparam", "cnc_wrparam", "cnc_rdmacro", "cnc_wrmacro", "cnc_rdalmmsg2"]
+        return fallback, {fn: [] for fn in fallback}
 
     def _load_hostweb_reference(self) -> tuple[list[str], dict[str, list[str]]]:
-        wsdl_path = Path("doc") / "wdsl.txt"
-        if not wsdl_path.exists():
-            fallback = ["get_shelf", "store_shelf", "read_status"]
-            return fallback, {cmd: [] for cmd in fallback}
+        json_path = Path("doc") / "hostweb_reference.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            return data.get("operations", []), data.get("params", {})
 
-        content = wsdl_path.read_text(encoding="utf-8", errors="ignore")
-        operations = re.findall(r'wsdl:operation\s+name="([^"]+)"', content)
-        # Keep first occurrence order and remove duplicated binding/port definitions.
-        unique_ops = list(dict.fromkeys(operations))
-
-        request_fields: dict[str, list[str]] = {}
-        for type_name, body in re.findall(r'<xs:complexType\s+name="(Request[^"]+)">(.*?)</xs:complexType>', content, re.S):
-            fields = re.findall(r'name="([^"]+)"\s+type="', body)
-            request_fields[type_name] = fields
-
-        op_params: dict[str, list[str]] = {}
-        for op in unique_ops:
-            m = re.search(rf'<xs:element\s+name="{re.escape(op)}">(.*?)</xs:element>', content, re.S)
-            if not m:
-                op_params[op] = []
-                continue
-            type_match = re.search(r'type="ax21:(Request[^"]+)"', m.group(1))
-            op_params[op] = request_fields.get(type_match.group(1), []) if type_match else []
-        return unique_ops, op_params
+        fallback = ["get_shelf", "store_shelf", "read_status"]
+        return fallback, {cmd: [] for cmd in fallback}
 
     def _generate_slots(self, cols: int, rows: int, z_mm: float = 100) -> List[Dict]:
         slots = []

@@ -32,7 +32,7 @@ Flask-basert webapp for produksjonscelle med Lean-Lift, ABB/Güdel og Fanuc CNC.
 - `POST /api/simulation/start|pause|step`
 
 ## Merk
-FOCAS-funksjonslisten lastes fra `focas/Dot NET sample/fwlib64.cs`, og LeanLift/HOST-WEB kommandoer lastes fra `doc/wdsl.txt` (WSDL-operasjoner + request-parametere). Kallene er fortsatt simulert, men kommando-/funksjonsnavn og dynamiske felter speiler nå dokumentasjonen i repoet. Binære vendorfiler (PDF/DLL/LIB) er holdt utenfor for å unngå "binary files not supported" i diff/PR-visning.
+FOCAS-funksjonslisten lastes fra `focas/focas_reference.json`, og LeanLift/HOST-WEB kommandoer lastes fra `doc/hostweb_reference.json`. Kallene er fortsatt simulert, men kommando-/funksjonsnavn og dynamiske felter speiler dokumentasjonen. Store vendorfiler er fjernet for å unngå diff/PR-feil som "binary files not supported".
 
 ## Kjør lokalt
 ```bash
