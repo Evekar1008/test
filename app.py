@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from pathlib import Path
+import json
 from typing import Dict, List
 
 from flask import Flask, jsonify, render_template, request
@@ -26,44 +28,27 @@ class ProductionCellService:
             Product("P1002", "Flens Ø280", "S355", 280, 140, "O2801"),
             Product("P1003", "Hylse Ø80", "Al 6082", 80, 55, "O0802"),
         ]
-
-        self.settings = {"shelf_width_mm": 2000, "shelf_depth_mm": 800}
-        self.shelves = [str(i) for i in range(1, 51)]
-
         self.part_types: List[Dict] = [
             {"part_type_id": "PT-RAW-120", "name": "Råemne Ø120", "diameter_mm": 120, "length_mm": 95, "height_mm": 95, "product_id": "P1001", "quantity_total": 60},
             {"part_type_id": "PT-RAW-280", "name": "Råemne Ø280", "diameter_mm": 280, "length_mm": 140, "height_mm": 140, "product_id": "P1002", "quantity_total": 22},
             {"part_type_id": "PT-INP-080", "name": "Emne Ø80", "diameter_mm": 80, "length_mm": 55, "height_mm": 55, "product_id": "P1003", "quantity_total": 45},
         ]
 
-        self.layout_templates: Dict[str, Dict] = {
-            "standard-120": {
-                "template_name": "standard-120",
-                "part_type_id": "PT-RAW-120",
-                "placements": [
-                    {"part_type_id": "PT-RAW-120", "x_mm": 250, "y_mm": 200, "z_mm": 95},
-                    {"part_type_id": "PT-RAW-120", "x_mm": 520, "y_mm": 200, "z_mm": 95},
-                ],
-            },
-            "standard-280": {
-                "template_name": "standard-280",
-                "part_type_id": "PT-RAW-280",
-                "placements": [
-                    {"part_type_id": "PT-RAW-280", "x_mm": 300, "y_mm": 260, "z_mm": 140},
-                ],
+        self.settings = {
+            "shelf_width_mm": 2000,
+            "shelf_depth_mm": 800,
+            "status_colors": {
+                "empty": "#cbd5e1",
+                "raw": "#60a5fa",
+                "in_process": "#f59e0b",
+                "finished": "#34d399",
+                "blocked": "#f87171",
             },
         }
 
-        self.shelf_assignments: Dict[str, Dict] = {}
-        for shelf in self.shelves:
-            if int(shelf) <= 20:
-                self.shelf_assignments[shelf] = {"template_name": "standard-120", "status": "Råemne"}
-            elif int(shelf) <= 35:
-                self.shelf_assignments[shelf] = {"template_name": "standard-280", "status": "Råemne"}
-            elif int(shelf) <= 45:
-                self.shelf_assignments[shelf] = {"template_name": "standard-120", "status": "Ferdig"}
-            else:
-                self.shelf_assignments[shelf] = {"template_name": "standard-120", "status": "Under prosess"}
+        self.shelves = [str(i) for i in range(1, 51)]
+        self.active_shelf = "1"
+        self.shelf_slots: Dict[str, List[Dict]] = {s: self._generate_slots(4, 3) for s in self.shelves}
 
         self.robot_status = {"vendor": "Güdel + ABB IRC", "connection": "Online", "mode": "Auto", "active_task": "Idle", "alarms": []}
         self.cnc_status = {
@@ -74,18 +59,28 @@ class ProductionCellService:
             "spindle_rpm": 0,
             "feed_rate": 0,
             "alarm": "Ingen",
-            "tool": 1,
             "part_counter": 0,
         }
         self.lift_status = {"connection": "Online", "mode": "Auto", "current_shelf": "1", "last_response": "Ingen kommando sendt"}
         self.simulation = {"running": False, "tick": 0, "active_shelf": "1", "last_event": "Ikke startet"}
-        self.active_product_id = "P1001"
         self.production_order = {"active": False, "part_type_id": "", "target_qty": 0, "processed_qty": 0, "mode": "quantity"}
+
+        self.available_focas_functions, self.focas_function_params = self._load_focas_reference()
+        self.available_leanlift_rest_commands, self.leanlift_command_params = self._load_hostweb_reference()
+
         self.history: List[Dict] = []
+        self.diagnostics: List[Dict] = []
+
+    def _now(self) -> str:
+        return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     def _log(self, category: str, message: str) -> None:
-        self.history.insert(0, {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"), "category": category, "message": message})
-        self.history = self.history[:300]
+        self.history.insert(0, {"ts": self._now(), "category": category, "message": message})
+        self.history = self.history[:400]
+
+    def _diag(self, channel: str, direction: str, payload: Dict) -> None:
+        self.diagnostics.insert(0, {"ts": self._now(), "channel": channel, "direction": direction, "raw": payload})
+        self.diagnostics = self.diagnostics[:500]
 
     def _get_part_type(self, part_type_id: str) -> Dict:
         pt = next((p for p in self.part_types if p["part_type_id"] == part_type_id), None)
@@ -93,76 +88,76 @@ class ProductionCellService:
             raise ValueError(f"Ukjent part_type_id: {part_type_id}")
         return pt
 
-    def _validate_xy(self, x_mm: float, y_mm: float, diameter_mm: float) -> None:
-        radius = diameter_mm / 2
-        if x_mm - radius < 0 or x_mm + radius > self.settings["shelf_width_mm"]:
-            raise ValueError("X-koordinat plasserer delen utenfor hyllebredde")
-        if y_mm - radius < 0 or y_mm + radius > self.settings["shelf_depth_mm"]:
-            raise ValueError("Y-koordinat plasserer delen utenfor hyldedybde")
+    def _load_focas_reference(self) -> tuple[list[str], dict[str, list[str]]]:
+        json_path = Path("focas") / "focas_reference.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            return data.get("functions", []), data.get("params", {})
 
-    def _validate_template_payload(self, placements: List[Dict]) -> str:
-        if not placements:
-            raise ValueError("Malen må ha minst én plassering")
-        part_type_ids = {p["part_type_id"] for p in placements}
-        if len(part_type_ids) != 1:
-            raise ValueError("Alle delene på en hylle må være av samme type")
-        part_type = self._get_part_type(next(iter(part_type_ids)))
-        for p in placements:
-            self._validate_xy(float(p["x_mm"]), float(p["y_mm"]), float(part_type["diameter_mm"]))
-            if float(p.get("z_mm", part_type["height_mm"])) <= 0:
-                raise ValueError("Z-koordinat/høyde må være > 0")
-        return part_type["part_type_id"]
+        fallback = ["cnc_statinfo", "cnc_rdparam", "cnc_wrparam", "cnc_rdmacro", "cnc_wrmacro", "cnc_rdalmmsg2"]
+        return fallback, {fn: [] for fn in fallback}
+
+    def _load_hostweb_reference(self) -> tuple[list[str], dict[str, list[str]]]:
+        json_path = Path("doc") / "hostweb_reference.json"
+        if json_path.exists():
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+            return data.get("operations", []), data.get("params", {})
+
+        fallback = ["get_shelf", "store_shelf", "read_status"]
+        return fallback, {cmd: [] for cmd in fallback}
+
+    def _generate_slots(self, cols: int, rows: int, z_mm: float = 100) -> List[Dict]:
+        slots = []
+        slot_no = 1
+        x_spacing = self.settings["shelf_width_mm"] / (cols + 1)
+        y_spacing = self.settings["shelf_depth_mm"] / (rows + 1)
+        for r in range(rows):
+            for c in range(cols):
+                slots.append(
+                    {
+                        "slot_no": slot_no,
+                        "x_mm": round((c + 1) * x_spacing, 2),
+                        "y_mm": round((r + 1) * y_spacing, 2),
+                        "z_mm": z_mm,
+                        "occupied": False,
+                        "status": "empty",
+                        "part_type_id": "",
+                        "part_no": None,
+                    }
+                )
+                slot_no += 1
+        return slots
 
     def get_shelf_layout(self, shelf: str) -> Dict:
-        assignment = self.shelf_assignments.get(str(shelf))
-        if not assignment:
-            raise ValueError(f"Ukjent hylle: {shelf}")
-        template = self.layout_templates[assignment["template_name"]]
-        placements = []
-        for p in template["placements"]:
-            part_type = self._get_part_type(p["part_type_id"])
-            placements.append(
-                {
-                    "part_type_id": p["part_type_id"],
-                    "name": part_type["name"],
-                    "product_id": part_type["product_id"],
-                    "diameter_mm": part_type["diameter_mm"],
-                    "length_mm": part_type["length_mm"],
-                    "height_mm": part_type["height_mm"],
-                    "x_mm": p["x_mm"],
-                    "y_mm": p["y_mm"],
-                    "z_mm": p.get("z_mm", part_type["height_mm"]),
-                    "status": assignment["status"],
-                }
-            )
+        if shelf not in self.shelves:
+            raise ValueError("Ukjent hylle")
         return {
-            "shelf": str(shelf),
-            "template_name": assignment["template_name"],
+            "shelf": shelf,
             "shelf_width_mm": self.settings["shelf_width_mm"],
             "shelf_depth_mm": self.settings["shelf_depth_mm"],
-            "part_type_id": template["part_type_id"],
-            "placements": placements,
+            "status_colors": self.settings["status_colors"],
+            "slots": self.shelf_slots[shelf],
         }
 
     def get_stats(self) -> Dict:
-        finished = sum(1 for s in self.shelf_assignments.values() if s["status"] == "Ferdig")
-        in_process = sum(1 for s in self.shelf_assignments.values() if s["status"] == "Under prosess")
+        all_slots = [slot for s in self.shelves for slot in self.shelf_slots[s]]
         return {
             "total_shelves": len(self.shelves),
-            "finished_shelves": finished,
-            "in_process_shelves": in_process,
+            "total_slots": len(all_slots),
+            "occupied_slots": sum(1 for s in all_slots if s["occupied"]),
+            "finished_slots": sum(1 for s in all_slots if s["status"] == "finished"),
+            "in_process_slots": sum(1 for s in all_slots if s["status"] == "in_process"),
             "simulation_ticks": self.simulation["tick"],
             "cnc_part_counter": self.cnc_status["part_counter"],
         }
 
     def get_state(self) -> Dict:
         return {
-            "active_product_id": self.active_product_id,
             "products": [asdict(p) for p in self.products],
-            "settings": self.settings,
             "part_types": self.part_types,
-            "layout_templates": list(self.layout_templates.values()),
+            "settings": self.settings,
             "shelves": self.shelves,
+            "active_shelf": self.active_shelf,
             "robot": self.robot_status,
             "cnc": self.cnc_status,
             "lift": self.lift_status,
@@ -170,44 +165,51 @@ class ProductionCellService:
             "production_order": self.production_order,
             "stats": self.get_stats(),
             "history": self.history[:100],
+            "available_focas_functions": self.available_focas_functions,
+            "focas_function_params": self.focas_function_params,
+            "available_leanlift_rest_commands": self.available_leanlift_rest_commands,
+            "leanlift_command_params": self.leanlift_command_params,
         }
 
-    def update_settings(self, shelf_width_mm: float, shelf_depth_mm: float) -> Dict:
-        if shelf_width_mm <= 0 or shelf_depth_mm <= 0:
-            raise ValueError("Hyllebredde og hyldedybde må være > 0")
-        self.settings["shelf_width_mm"] = shelf_width_mm
-        self.settings["shelf_depth_mm"] = shelf_depth_mm
-        self._log("settings", f"Oppdaterte settings til {shelf_width_mm}x{shelf_depth_mm}")
+    def update_settings(self, payload: Dict) -> Dict:
+        if "shelf_width_mm" in payload:
+            self.settings["shelf_width_mm"] = float(payload["shelf_width_mm"])
+        if "shelf_depth_mm" in payload:
+            self.settings["shelf_depth_mm"] = float(payload["shelf_depth_mm"])
+        if "status_colors" in payload and isinstance(payload["status_colors"], dict):
+            self.settings["status_colors"].update(payload["status_colors"])
+        self._log("settings", "Oppdaterte settings")
         return self.settings
 
-    def upsert_layout_template(self, template_name: str, placements: List[Dict]) -> Dict:
-        if not template_name:
-            raise ValueError("template_name er påkrevd")
-        part_type_id = self._validate_template_payload(placements)
-        part_type = self._get_part_type(part_type_id)
-        self.layout_templates[template_name] = {
-            "template_name": template_name,
-            "part_type_id": part_type_id,
-            "placements": [
-                {"part_type_id": part_type_id, "x_mm": float(p["x_mm"]), "y_mm": float(p["y_mm"]), "z_mm": float(p.get("z_mm", part_type["height_mm"]))}
-                for p in placements
-            ],
-        }
-        self._log("shelf", f"Lagret mal {template_name}")
-        return self.layout_templates[template_name]
+    def configure_shelf_layout_graphic(self, shelf: str, part_type_id: str, cols: int, rows: int, z_mm: float) -> Dict:
+        if shelf not in self.shelves:
+            raise ValueError("Ukjent hylle")
+        self._get_part_type(part_type_id)
+        slots = self._generate_slots(cols, rows, z_mm)
+        for i, slot in enumerate(slots, start=1):
+            slot["occupied"] = True
+            slot["status"] = "raw"
+            slot["part_type_id"] = part_type_id
+            slot["part_no"] = i
+        self.shelf_slots[shelf] = slots
+        self._log("shelf", f"Grafisk layout definert for hylle {shelf}")
+        return self.get_shelf_layout(shelf)
 
-    def apply_template_to_shelf(self, shelf: str, template_name: str, status: str | None = None) -> Dict:
-        shelf_key = str(shelf)
-        if shelf_key not in self.shelves:
-            raise ValueError(f"Ukjent hylle: {shelf}")
-        if template_name not in self.layout_templates:
-            raise ValueError(f"Ukjent template_name: {template_name}")
-        self.shelf_assignments[shelf_key]["template_name"] = template_name
-        if status:
-            self.shelf_assignments[shelf_key]["status"] = status
-        self.lift_status["current_shelf"] = shelf_key
-        self._log("shelf", f"Aktiv mal på hylle {shelf_key}: {template_name}")
-        return self.get_shelf_layout(shelf_key)
+    def update_slot(self, shelf: str, slot_no: int, occupied: bool, status: str, part_type_id: str | None) -> Dict:
+        slots = self.shelf_slots.get(shelf)
+        if not slots:
+            raise ValueError("Ukjent hylle")
+        slot = next((s for s in slots if s["slot_no"] == slot_no), None)
+        if not slot:
+            raise ValueError("Ukjent slot")
+
+        slot["occupied"] = occupied
+        slot["status"] = status
+        slot["part_type_id"] = part_type_id or ""
+        slot["part_no"] = slot_no if occupied else None
+        self._log("lift", f"Manuell {'innlasting' if occupied else 'utlasting'} på hylle {shelf}, slot {slot_no}")
+        return slot
+
 
     def upsert_part_type(self, payload: Dict) -> Dict:
         part_type_id = payload.get("part_type_id", "").strip()
@@ -224,7 +226,6 @@ class ProductionCellService:
         }
         if record["diameter_mm"] <= 0 or record["length_mm"] <= 0 or record["height_mm"] <= 0:
             raise ValueError("Diameter/lengde/høyde må være > 0")
-
         existing = next((p for p in self.part_types if p["part_type_id"] == part_type_id), None)
         if existing:
             existing.update(record)
@@ -238,14 +239,8 @@ class ProductionCellService:
         target = pt["quantity_total"] if mode == "all" else int(quantity or 0)
         if target <= 0:
             raise ValueError("Antall må være > 0")
-        self.production_order = {
-            "active": True,
-            "part_type_id": part_type_id,
-            "target_qty": target,
-            "processed_qty": 0,
-            "mode": mode,
-        }
-        self._log("production", f"Startet produksjon {part_type_id}, mode={mode}, target={target}")
+        self.production_order = {"active": True, "part_type_id": part_type_id, "target_qty": target, "processed_qty": 0, "mode": mode}
+        self._log("production", f"Startet produksjon: {part_type_id}, target={target}, mode={mode}")
         return self.production_order
 
     def complete_one_part(self) -> None:
@@ -255,55 +250,43 @@ class ProductionCellService:
         self.cnc_status["part_counter"] += 1
         if self.production_order["processed_qty"] >= self.production_order["target_qty"]:
             self.production_order["active"] = False
-            self._log("production", "Produksjonsordre ferdig")
-
-    def select_product(self, product_id: str) -> Dict:
-        product = next((p for p in self.products if p.id == product_id), None)
-        if not product:
-            raise ValueError(f"Ukjent produkt: {product_id}")
-        self.active_product_id = product.id
-        self.robot_status["active_task"] = f"Klargjør håndtering for {product.name}"
-        self.cnc_status["selected_program"] = product.required_cnc_program
-        self._log("production", f"Valgte produkt {product_id}")
-        return self.get_state()
+            self._log("production", "Produksjon ferdig")
 
     def call_cnc_focas(self, function_name: str, params: Dict) -> Dict:
-        handlers = {
-            "read_alarm": lambda _: {"alarm": self.cnc_status["alarm"]},
-            "read_status": lambda _: {"machine_state": self.cnc_status["machine_state"], "spindle_rpm": self.cnc_status["spindle_rpm"]},
-            "set_program": lambda p: self.select_cnc_program(p.get("program_number", "O0001")),
-            "set_feed_override": lambda p: {"feed_override": float(p.get("value", 100))},
-            "read_macro": lambda p: {"macro": p.get("address", "#100"), "value": 12.34},
-        }
-        if function_name not in handlers:
-            raise ValueError("Ukjent FOCAS-funksjon")
-        response = handlers[function_name](params)
-        self._log("cnc", f"FOCAS kall: {function_name}")
-        return {"function": function_name, "params": params, "response": response}
+        if function_name not in self.available_focas_functions:
+            raise ValueError("FOCAS-funksjon ikke tilgjengelig i simulering")
+        self._diag("cnc", "tx", {"function": function_name, "params": params})
 
-    def select_cnc_program(self, program_number: str) -> Dict:
-        if not program_number or not program_number.startswith("O"):
-            raise ValueError("Program må starte med 'O', f.eks. O1200")
-        self.cnc_status["selected_program"] = program_number
-        self.cnc_status["machine_state"] = "Program valgt"
-        self._log("cnc", f"Valgte CNC-program {program_number}")
-        return self.cnc_status
+        if function_name in ["cnc_start", "cnc_stop", "cnc_reset"]:
+            self.cnc_status["machine_state"] = {"cnc_start": "Kjører", "cnc_stop": "Stop", "cnc_reset": "Klar"}[function_name]
+        if function_name == "cnc_rdspmeter":
+            response = {"spindle": self.cnc_status["spindle_rpm"]}
+        elif function_name == "cnc_rdspeed":
+            response = {"spindle_rpm": self.cnc_status["spindle_rpm"], "feed_rate": self.cnc_status["feed_rate"]}
+        else:
+            response = {"result": "ok", "function": function_name}
+
+        out = {"function": function_name, "params": params, "response": response}
+        self._diag("cnc", "rx", out)
+        self._log("cnc", f"FOCAS: {function_name}")
+        return out
 
     def call_lift_rest(self, function_name: str, params: Dict) -> Dict:
-        handlers = {
-            "move_to_shelf": lambda p: {"moved_to": str(p.get("shelf", "1"))},
-            "pick_tray": lambda p: {"picked": True, "shelf": str(p.get("shelf", "1"))},
-            "store_tray": lambda p: {"stored": True, "shelf": str(p.get("shelf", "1"))},
-            "inventory_status": lambda _: {"shelves": len(self.shelves), "connection": self.lift_status["connection"]},
-        }
-        if function_name not in handlers:
-            raise ValueError("Ukjent lift-funksjon")
-        response = handlers[function_name](params)
-        if "moved_to" in response:
-            self.lift_status["current_shelf"] = response["moved_to"]
+        if function_name not in self.available_leanlift_rest_commands:
+            raise ValueError("LeanLift REST-kommando ikke tilgjengelig i simulering")
+        self._diag("lift", "tx", {"command": function_name, "params": params})
+
+        if function_name in ["get_shelf", "getShelfV02", "add_shelf", "remove_shelf", "shelf_transfer", "get_shelf_backgr"]:
+            shelf = str(params.get("pm01_shelfNumber", params.get("shelf", self.lift_status["current_shelf"])))
+            if shelf in self.shelves:
+                self.lift_status["current_shelf"] = shelf
+        response = {"command": function_name, "accepted": True, "current_shelf": self.lift_status["current_shelf"]}
         self.lift_status["last_response"] = str(response)
-        self._log("lift", f"Lift kommando: {function_name}")
-        return {"function": function_name, "params": params, "response": response}
+
+        out = {"function": function_name, "params": params, "response": response}
+        self._diag("lift", "rx", out)
+        self._log("lift", f"REST: {function_name}")
+        return out
 
     def simulation_start(self) -> Dict:
         self.simulation["running"] = True
@@ -325,25 +308,32 @@ class ProductionCellService:
         self.simulation["tick"] += 1
         shelf_index = (self.simulation["tick"] - 1) % len(self.shelves)
         shelf = self.shelves[shelf_index]
+        self.active_shelf = shelf
         self.simulation["active_shelf"] = shelf
         self.lift_status["current_shelf"] = shelf
 
+        slots = self.shelf_slots[shelf]
         if self.simulation["tick"] % 2 == 1:
-            self.shelf_assignments[shelf]["status"] = "Under prosess"
-            self.cnc_status["machine_state"] = "Kjører"
-            self.cnc_status["spindle_rpm"] = 1200 + shelf_index * 5
-            self.cnc_status["feed_rate"] = 180 + shelf_index
             self.robot_status["active_task"] = f"Laster del fra hylle {shelf}"
-            self.simulation["last_event"] = f"Startet bearbeiding på hylle {shelf}"
+            self.cnc_status["machine_state"] = "Kjører"
+            self.cnc_status["spindle_rpm"] = 1400
+            self.cnc_status["feed_rate"] = 220
+            for s in slots:
+                if s["occupied"]:
+                    s["status"] = "in_process"
+            self.simulation["last_event"] = f"Startet prosess på hylle {shelf}"
         else:
-            self.shelf_assignments[shelf]["status"] = "Ferdig"
+            self.robot_status["active_task"] = f"Lagrer ferdig del på hylle {shelf}"
             self.cnc_status["machine_state"] = "Klar"
             self.cnc_status["spindle_rpm"] = 0
             self.cnc_status["feed_rate"] = 0
-            self.robot_status["active_task"] = f"Legger ferdig del tilbake på hylle {shelf}"
-            self.simulation["last_event"] = f"Fullførte bearbeiding på hylle {shelf}"
+            for s in slots:
+                if s["occupied"]:
+                    s["status"] = "finished"
             self.complete_one_part()
+            self.simulation["last_event"] = f"Fullførte prosess på hylle {shelf}"
 
+        self._diag("cell", "rx", {"tick": self.simulation["tick"], "active_shelf": shelf, "event": self.simulation["last_event"]})
         self._log("simulation", self.simulation["last_event"])
         return self.simulation
 
@@ -371,19 +361,29 @@ def cnc_page():
     return render_template("cnc.html")
 
 
-@app.get("/stats")
-def stats_page():
-    return render_template("stats.html")
-
-
 @app.get("/lift")
 def lift_page():
     return render_template("lift.html")
 
 
+@app.get("/stats")
+def stats_page():
+    return render_template("stats.html")
+
+
+@app.get("/diagnostics")
+def diagnostics_page():
+    return render_template("diagnostics.html")
+
+
 @app.get("/api/state")
 def api_state():
     return jsonify(service.get_state())
+
+
+@app.get("/api/diagnostics")
+def api_diagnostics():
+    return jsonify(service.diagnostics)
 
 
 @app.get("/api/leanlift/shelf-layout/<shelf>")
@@ -395,34 +395,33 @@ def api_shelf_layout(shelf: str):
 
 
 @app.post("/api/settings")
-def api_update_settings():
-    payload = request.get_json(force=True)
+def api_settings():
     try:
-        return jsonify(service.update_settings(float(payload.get("shelf_width_mm", 0)), float(payload.get("shelf_depth_mm", 0))))
+        return jsonify(service.update_settings(request.get_json(force=True)))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
 
-@app.post("/api/layout-templates")
-def api_upsert_layout_template():
+@app.post("/api/shelf/configure-graphic")
+def api_shelf_configure_graphic():
     payload = request.get_json(force=True)
     try:
-        return jsonify(service.upsert_layout_template(payload.get("template_name", ""), payload.get("placements", [])))
+        return jsonify(service.configure_shelf_layout_graphic(str(payload.get("shelf", "")), payload.get("part_type_id", ""), int(payload.get("cols", 4)), int(payload.get("rows", 3)), float(payload.get("z_mm", 100))))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
 
-@app.post("/api/shelf/apply-template")
-def api_apply_template_to_shelf():
+@app.post("/api/shelf/slot/update")
+def api_slot_update():
     payload = request.get_json(force=True)
     try:
-        return jsonify(service.apply_template_to_shelf(payload.get("shelf", ""), payload.get("template_name", ""), payload.get("status")))
+        return jsonify(service.update_slot(str(payload.get("shelf", "")), int(payload.get("slot_no", 0)), bool(payload.get("occupied", False)), payload.get("status", "empty"), payload.get("part_type_id")))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
 
 @app.post("/api/parts")
-def api_upsert_part_type():
+def api_parts():
     payload = request.get_json(force=True)
     try:
         return jsonify(service.upsert_part_type(payload))
@@ -431,28 +430,10 @@ def api_upsert_part_type():
 
 
 @app.post("/api/production/start")
-def api_start_production():
+def api_production_start():
     payload = request.get_json(force=True)
     try:
         return jsonify(service.start_production(payload.get("part_type_id", ""), payload.get("mode", "quantity"), payload.get("quantity")))
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-
-@app.post("/api/select-product")
-def api_select_product():
-    payload = request.get_json(force=True)
-    try:
-        return jsonify(service.select_product(payload.get("product_id", "")))
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-
-@app.post("/api/cnc/select-program")
-def api_select_cnc_program():
-    payload = request.get_json(force=True)
-    try:
-        return jsonify(service.select_cnc_program(payload.get("program_number", "")))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
@@ -476,17 +457,17 @@ def api_lift_command():
 
 
 @app.post("/api/simulation/start")
-def api_simulation_start():
+def api_sim_start():
     return jsonify(service.simulation_start())
 
 
 @app.post("/api/simulation/pause")
-def api_simulation_pause():
+def api_sim_pause():
     return jsonify(service.simulation_pause())
 
 
 @app.post("/api/simulation/step")
-def api_simulation_step():
+def api_sim_step():
     return jsonify(service.simulation_step())
 
 

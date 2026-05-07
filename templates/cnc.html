@@ -1,11 +1,4 @@
 <!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CNC</title><link rel="stylesheet" href="/static/style.css"/></head>
 <body data-page="cnc">{% include '_nav.html' %}
-<main>
-<section class="card"><h2>CNC status</h2><ul id="cncStatus"></ul></section>
-<section class="card"><h2>FOCAS funksjoner</h2>
-<div class="row"><label>Funksjon</label><select id="focasFunction"></select></div>
-<div id="focasFields" class="row"></div>
-<button id="runFocasBtn">Kjør</button>
-<pre id="focasResponse"></pre>
-</section>
-</main><script src="/static/app.js"></script></body></html>
+<main><section class="card"><h2>CNC status</h2><ul id="cncStatus"></ul></section><section class="card"><h2>FOCAS funksjoner</h2><div class="row"><select id="focasFunction"></select></div><div id="focasFields" class="row"></div><button id="runFocasBtn">Kjør FOCAS</button><pre id="focasResponse"></pre></section></main>
+<script src="/static/app.js"></script></body></html>

@@ -1,11 +1,4 @@
 <!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Deler</title><link rel="stylesheet" href="/static/style.css"/></head>
 <body data-page="parts">{% include '_nav.html' %}
-<main>
-<section class="card"><h2>Definer deltype</h2>
-<div class="row"><input id="partTypeId" placeholder="PT-NEW-001"/><input id="partName" placeholder="Navn"/></div>
-<div class="row"><input id="partProductId" placeholder="Produkt-ID"/><input id="partQty" type="number" placeholder="Antall"/></div>
-<div class="row"><input id="partDia" type="number" placeholder="Diameter"/><input id="partLen" type="number" placeholder="Lengde"/><input id="partHeight" type="number" placeholder="Høyde (Z)"/></div>
-<button id="savePartBtn">Lagre deltype</button>
-</section>
-<section class="card"><h2>Deler</h2><table><thead><tr><th>ID</th><th>Navn</th><th>Dia</th><th>L</th><th>Z</th><th>Antall</th></tr></thead><tbody id="partsTable"></tbody></table></section>
-</main><script src="/static/app.js"></script></body></html>
+<main><section class="card"><h2>Definer deltype</h2><div class="row"><input id="partTypeId" placeholder="ID"/><input id="partName" placeholder="Navn"/><input id="partProductId" placeholder="Produkt"/></div><div class="row"><input id="partQty" type="number" placeholder="Antall"/><input id="partDia" type="number" placeholder="Diameter"/><input id="partLen" type="number" placeholder="Lengde"/><input id="partHeight" type="number" placeholder="Høyde Z"/></div><button id="savePartBtn">Lagre del</button></section><section class="card"><h2>Deler</h2><table><thead><tr><th>ID</th><th>Navn</th><th>Dia</th><th>L</th><th>Z</th><th>Antall</th></tr></thead><tbody id="partsTable"></tbody></table></section></main>
+<script src="/static/app.js"></script></body></html>
