@@ -1,4 +1,27 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Diagnostics</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="diagnostics">{% include '_nav.html' %}
-<main><section class="card"><h2>Rå kommunikasjon mellom enheter</h2><table><thead><tr><th>Tid</th><th>Kanal</th><th>Retning</th><th>Raw</th></tr></thead><tbody id="diagTable"></tbody></table></section></main>
-<script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagnostikk</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="diagnostics">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="card">
+        <div class="section-title">
+          <h1>Diagnostikk</h1>
+          <button id="refreshDiagnosticsBtn" class="secondary">Oppdater</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tid</th><th>Kanal</th><th>Retning</th><th>Payload</th></tr></thead>
+            <tbody id="diagTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

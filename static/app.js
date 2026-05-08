@@ -1,295 +1,548 @@
+const $ = (id) => document.getElementById(id);
+
+const SIGNAL_KEYS = {
+  safety: ['EmergencyStopActive', 'GatesClosed', 'ScannerClear', 'Mode'],
+  leanlift: ['CurrentShelf', 'AccessPoint', 'TrayPresent', 'TrayExtended', 'DoorClosed', 'AlarmActive', 'StatusMessage'],
+  robot: ['Ready', 'Busy', 'Fault', 'AtHome', 'PartInGripper', 'StationComplete', 'ActiveTask', 'StatusMessage'],
+  cnc: ['MachineReady', 'CycleRunning', 'CycleComplete', 'AlarmActive', 'PartPresent', 'SelectedProgram', 'StatusMessage'],
+};
+
 async function getState() {
-  const r = await fetch('/api/state');
-  return r.json();
+  const response = await fetch('/api/state');
+  return response.json();
 }
 
-function renderKeyValues(id, obj) {
-  const el = document.getElementById(id);
+async function postJson(url, payload = {}) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+function on(id, eventName, fn) {
+  const el = $(id);
+  if (el) el.addEventListener(eventName, fn);
+}
+
+function makeCell(value) {
+  const td = document.createElement('td');
+  td.textContent = value == null ? '-' : String(value);
+  return td;
+}
+
+function renderKv(id, obj, keys) {
+  const el = $(id);
   if (!el) return;
   el.innerHTML = '';
-  Object.entries(obj || {}).forEach(([k, v]) => {
-    const li = document.createElement('li');
-    li.textContent = `${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`;
-    el.appendChild(li);
+  const entries = keys ? keys.map((key) => [key, obj ? obj[key] : undefined]) : Object.entries(obj || {});
+  entries.forEach(([key, value]) => {
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = key;
+    dd.textContent = typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '-');
+    el.append(dt, dd);
   });
+}
+
+function renderStatusBadges(state) {
+  const safety = state.safety?.safety_ok ? 'OK' : 'TRIP';
+  if ($('safetyBadge')) {
+    $('safetyBadge').textContent = safety;
+    $('safetyBadge').className = state.safety?.safety_ok ? 'ok' : 'bad';
+  }
+  if ($('modeBadge')) $('modeBadge').textContent = state.safety?.mode_key || '-';
+  if ($('opcuaBadge')) {
+    $('opcuaBadge').textContent = state.opcua?.running ? 'Kjorer' : 'Stoppet';
+    $('opcuaBadge').className = state.opcua?.running ? 'ok' : 'warn';
+  }
+  if ($('activeShelfBadge')) $('activeShelfBadge').textContent = state.active_shelf || '-';
+}
+
+function renderMachineStatus(state) {
+  renderKv('liftStatus', state.lift, ['connection', 'current_shelf', 'access_point', 'tray_present', 'tray_extended', 'door_closed', 'alarm_active', 'status_message']);
+  renderKv('robotStatus', state.robot, ['connection', 'ready', 'busy', 'fault', 'at_home', 'part_in_gripper', 'station_complete', 'active_task', 'status_message']);
+  renderKv('cncStatus', state.cnc, ['connection', 'machine_state', 'selected_program', 'program_valid', 'machine_ready', 'cycle_running', 'cycle_complete', 'alarm_active', 'part_present', 'part_counter']);
+  renderKv('safetyStatus', state.safety, ['safety_ok', 'emergency_stop_active', 'gates_closed', 'scanner_clear', 'mode_key', 'last_trip']);
+}
+
+function renderEvents(state, targetId = 'eventTable', limit = 8) {
+  const body = $(targetId);
+  if (!body) return;
+  body.innerHTML = '';
+  (state.history || []).slice(0, limit).forEach((event) => {
+    const tr = document.createElement('tr');
+    tr.append(makeCell(event.ts), makeCell(event.category), makeCell(event.message));
+    body.appendChild(tr);
+  });
+}
+
+function renderInventory(state) {
+  const inventory = state.inventory || {};
+  const flat = {};
+  Object.entries(inventory).forEach(([partType, statuses]) => {
+    flat[partType] = Object.entries(statuses).map(([status, qty]) => `${status}:${qty}`).join('  ');
+  });
+  renderKv('inventoryList', flat);
 }
 
 function renderShelfSvg(layout) {
-  const svg = document.getElementById('shelfSvg');
+  const svg = $('shelfSvg');
   if (!svg) return;
   svg.innerHTML = '';
-
-  const viewW = 1000, viewH = 450, pad = 20;
+  const viewW = 1000;
+  const viewH = 450;
+  const pad = 24;
   const scale = Math.min((viewW - pad * 2) / layout.shelf_width_mm, (viewH - pad * 2) / layout.shelf_depth_mm);
+  const shelfW = layout.shelf_width_mm * scale;
+  const shelfH = layout.shelf_depth_mm * scale;
 
-  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', pad);
-  rect.setAttribute('y', pad);
-  rect.setAttribute('width', layout.shelf_width_mm * scale);
-  rect.setAttribute('height', layout.shelf_depth_mm * scale);
-  rect.setAttribute('fill', '#e2e8f0');
-  rect.setAttribute('stroke', '#334155');
-  svg.appendChild(rect);
+  const tray = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  tray.setAttribute('x', pad);
+  tray.setAttribute('y', pad);
+  tray.setAttribute('width', shelfW);
+  tray.setAttribute('height', shelfH);
+  tray.setAttribute('rx', 4);
+  tray.setAttribute('fill', '#f8fafc');
+  tray.setAttribute('stroke', '#475569');
+  tray.setAttribute('stroke-width', '2');
+  svg.appendChild(tray);
 
   layout.slots.forEach((slot) => {
-    const color = layout.status_colors[slot.status] || '#94a3b8';
-    const r = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    r.setAttribute('cx', pad + slot.x_mm * scale);
-    r.setAttribute('cy', pad + slot.y_mm * scale);
-    r.setAttribute('r', 18);
-    r.setAttribute('fill', color);
-    r.setAttribute('stroke', '#0f172a');
-    svg.appendChild(r);
+    const cx = pad + slot.x_mm * scale;
+    const cy = pad + slot.y_mm * scale;
+    const status = slot.status === 'in_process' ? 'wip' : slot.status;
+    const color = layout.status_colors[status] || layout.status_colors[slot.status] || '#94a3b8';
+    const diameter = Number(slot.diameter_mm || 80);
+    const radius = slot.occupied ? Math.max(7, Math.min(72, (diameter * scale) / 2)) : 6;
 
-    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    t.setAttribute('x', pad + slot.x_mm * scale);
-    t.setAttribute('y', pad + slot.y_mm * scale);
-    t.setAttribute('text-anchor', 'middle');
-    t.setAttribute('dominant-baseline', 'middle');
-    t.setAttribute('font-size', '11');
-    t.textContent = String(slot.slot_no);
-    svg.appendChild(t);
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', cx);
+    circle.setAttribute('cy', cy);
+    circle.setAttribute('r', radius);
+    circle.setAttribute('fill', slot.occupied ? color : '#ffffff');
+    circle.setAttribute('stroke', slot.occupied ? '#0f172a' : '#94a3b8');
+    circle.setAttribute('stroke-width', slot.occupied ? '1.5' : '1');
+    svg.appendChild(circle);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', cx);
+    label.setAttribute('y', cy + 3);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '11');
+    label.textContent = String(slot.slot_no);
+    svg.appendChild(label);
   });
 
-  const info = document.getElementById('shelfInfo');
-  if (info) info.textContent = `Hylle ${layout.shelf} (${layout.slots.length} sloter)`;
+  const info = $('shelfInfo');
+  if (info) {
+    info.textContent = `Hylle ${layout.shelf}: ${layout.shelf_width_mm} x ${layout.shelf_depth_mm} mm, ${layout.slots.length} lokasjoner`;
+  }
 }
 
 function renderCoords(layout) {
-  const body = document.getElementById('coordsTable');
+  const body = $('coordsTable');
   if (!body) return;
   body.innerHTML = '';
   layout.slots.forEach((slot) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${slot.slot_no}</td><td>${slot.part_type_id || '-'}</td><td>${slot.x_mm}</td><td>${slot.y_mm}</td><td>${slot.z_mm}</td><td>${slot.status}</td>`;
+    tr.append(
+      makeCell(slot.slot_no),
+      makeCell(slot.part_type_id || '-'),
+      makeCell(slot.status),
+      makeCell(slot.diameter_mm || '-'),
+      makeCell(slot.x_mm),
+      makeCell(slot.y_mm),
+      makeCell(slot.z_mm),
+    );
     body.appendChild(tr);
   });
 }
 
 async function loadShelfLayout(shelf) {
-  const r = await fetch(`/api/leanlift/shelf-layout/${encodeURIComponent(shelf)}`);
-  const data = await r.json();
-  if (!r.ok) return alert(data.error || 'Feil');
+  const response = await fetch(`/api/leanlift/shelf-layout/${encodeURIComponent(shelf)}`);
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Unable to load shelf');
   renderShelfSvg(data);
   renderCoords(data);
   return data;
 }
 
-function schemaFromParamNames(paramNames) {
-  return (paramNames || []).map((name) => ({ name, placeholder: name }));
-}
-
-function renderDynamicFields(containerId, schema) {
-  const c = document.getElementById(containerId);
-  if (!c) return;
-  c.innerHTML = '';
-  schema.forEach((f) => {
-    const i = document.createElement('input');
-    i.dataset.name = f.name;
-    i.placeholder = f.placeholder;
-    c.appendChild(i);
+function fillSelect(id, items, valueFn, labelFn, selectedValue) {
+  const el = $(id);
+  if (!el) return;
+  el.innerHTML = '';
+  items.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = valueFn(item);
+    option.textContent = labelFn(item);
+    if (selectedValue && option.value === selectedValue) option.selected = true;
+    el.appendChild(option);
   });
 }
 
-function readDynamicFields(containerId) {
-  const c = document.getElementById(containerId);
-  const out = {};
-  if (!c) return out;
-  c.querySelectorAll('input').forEach((i) => (out[i.dataset.name] = i.value));
-  return out;
+function selectedPartType(state) {
+  const partTypeId = $('prodPartType')?.value || state.part_types?.[0]?.part_type_id;
+  return state.part_types.find((part) => part.part_type_id === partTypeId) || state.part_types[0];
+}
+
+function productForId(state, productId) {
+  return state.products.find((product) => product.id === productId) || state.products[0];
+}
+
+function setupProgramControls(state) {
+  fillSelect('programProduct', state.products, (p) => p.id, (p) => `${p.id} - ${p.name}`);
+
+  function refreshProgramOptions() {
+    const product = productForId(state, $('programProduct')?.value);
+    fillSelect('programSelect', product.allowed_cnc_programs || [], (program) => program, (program) => program, state.cnc.selected_program);
+  }
+
+  refreshProgramOptions();
+  on('programProduct', 'change', refreshProgramOptions);
+  on('selectProgramBtn', 'click', async () => {
+    try {
+      const result = await postJson('/api/cnc/program/select', {
+        product_id: $('programProduct').value,
+        program: $('programSelect').value,
+        operator: 'development',
+      });
+      renderKv('cncProgramStatus', result);
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  renderKv('cncProgramStatus', { selected_program: state.cnc.selected_program, program_valid: state.cnc.program_valid });
+}
+
+function setupProductionControls(state) {
+  fillSelect('prodPartType', state.part_types, (p) => p.part_type_id, (p) => `${p.part_type_id} (${p.quantity_total})`);
+  on('startProductionBtn', 'click', async () => {
+    try {
+      const result = await postJson('/api/production/start', {
+        part_type_id: $('prodPartType').value,
+        mode: $('prodMode').value,
+        quantity: Number($('prodQty').value),
+      });
+      renderKv('productionStatus', result);
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('stopProductionBtn', 'click', async () => {
+    await postJson('/api/production/stop', { reason: 'Stopped from dashboard' });
+    await refreshCurrentPage();
+  });
+  on('simStartBtn', 'click', async () => {
+    await postJson('/api/simulation/start');
+    await refreshCurrentPage();
+  });
+  on('simPauseBtn', 'click', async () => {
+    await postJson('/api/simulation/pause');
+    await refreshCurrentPage();
+  });
+  on('simStepBtn', 'click', async () => {
+    await postJson('/api/simulation/step');
+    await refreshCurrentPage();
+  });
+}
+
+function renderDashboardState(state) {
+  renderStatusBadges(state);
+  renderMachineStatus(state);
+  renderKv('productionStatus', state.production_order);
+  renderEvents(state);
+}
+
+async function sendCommand(command) {
+  const state = await postJson('/api/opcua/signal', { command });
+  renderDashboardState(state);
+  await loadShelfLayout(state.active_shelf);
+  return state;
 }
 
 async function initDashboard() {
   const state = await getState();
-  const partSel = document.getElementById('prodPartType');
-  state.part_types.forEach((pt) => {
-    const o = document.createElement('option');
-    o.value = pt.part_type_id;
-    o.textContent = `${pt.part_type_id} (${pt.quantity_total})`;
-    partSel.appendChild(o);
-  });
-  ['empty', 'raw', 'in_process', 'finished', 'blocked'].forEach((k) => {
-    const el = document.getElementById(`color_${k}`);
-    if (el) el.value = state.settings.status_colors[k];
-  });
-
-  renderKeyValues('productionStatus', state.production_order);
-  renderKeyValues('simulationStatus', state.simulation);
+  fillSelect('dashboardShelfSelect', state.shelves, (s) => s, (s) => `Hylle ${s}`, state.active_shelf);
+  setupProgramControls(state);
+  setupProductionControls(state);
+  renderDashboardState(state);
   await loadShelfLayout(state.active_shelf);
 
-  document.getElementById('saveColorsBtn').addEventListener('click', async () => {
-    const payload = {
-      status_colors: {
-        empty: document.getElementById('color_empty').value,
-        raw: document.getElementById('color_raw').value,
-        in_process: document.getElementById('color_in_process').value,
-        finished: document.getElementById('color_finished').value,
-        blocked: document.getElementById('color_blocked').value,
-      },
-    };
-    await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const s = await getState();
-    await loadShelfLayout(s.active_shelf);
+  on('dashboardShelfSelect', 'change', async () => {
+    await sendCommand(`GET_SHELF ${$('dashboardShelfSelect').value}`);
   });
-
-  document.getElementById('startProductionBtn').addEventListener('click', async () => {
-    const payload = { part_type_id: partSel.value, mode: document.getElementById('prodMode').value, quantity: Number(document.getElementById('prodQty').value) };
-    const r = await fetch('/api/production/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    if (!r.ok) return alert(d.error || 'Feil');
-    renderKeyValues('productionStatus', d);
+  document.querySelectorAll('.sim-command').forEach((button) => {
+    button.addEventListener('click', async () => sendCommand(button.dataset.command));
   });
-
-  document.getElementById('simStartBtn').addEventListener('click', async () => { await fetch('/api/simulation/start', { method: 'POST' }); const s = await getState(); renderKeyValues('simulationStatus', s.simulation); await loadShelfLayout(s.active_shelf); });
-  document.getElementById('simPauseBtn').addEventListener('click', async () => { await fetch('/api/simulation/pause', { method: 'POST' }); const s = await getState(); renderKeyValues('simulationStatus', s.simulation); await loadShelfLayout(s.active_shelf); });
-  document.getElementById('simStepBtn').addEventListener('click', async () => { await fetch('/api/simulation/step', { method: 'POST' }); const s = await getState(); renderKeyValues('simulationStatus', s.simulation); renderKeyValues('productionStatus', s.production_order); await loadShelfLayout(s.active_shelf); });
+  on('sendShelfCommandBtn', 'click', async () => {
+    await sendCommand($('shelfCommandInput').value);
+  });
 }
 
 async function initShelves() {
   const state = await getState();
-  const shelfSel = document.getElementById('shelfSelect');
-  const p1 = document.getElementById('layoutPartType');
-  const p2 = document.getElementById('manualPartType');
+  fillSelect('shelfSelect', state.shelves, (s) => s, (s) => `Hylle ${s}`, state.active_shelf);
+  fillSelect('layoutPartType', state.part_types, (p) => p.part_type_id, (p) => p.part_type_id);
+  fillSelect('manualPartType', state.part_types, (p) => p.part_type_id, (p) => p.part_type_id);
+  if ($('shelfWidth')) $('shelfWidth').value = state.settings.shelf_width_mm;
+  if ($('shelfDepth')) $('shelfDepth').value = state.settings.shelf_depth_mm;
+  if ($('shelfHeight')) $('shelfHeight').value = state.settings.shelf_height_mm;
+  await loadShelfLayout($('shelfSelect').value);
 
-  state.shelves.forEach((s) => {
-    const o = document.createElement('option');
-    o.value = s;
-    o.textContent = `Hylle ${s}`;
-    shelfSel.appendChild(o);
+  on('shelfSelect', 'change', async () => loadShelfLayout($('shelfSelect').value));
+  on('saveSettingsBtn', 'click', async () => {
+    await postJson('/api/settings', {
+      shelf_width_mm: Number($('shelfWidth').value),
+      shelf_depth_mm: Number($('shelfDepth').value),
+      shelf_height_mm: Number($('shelfHeight').value),
+    });
+    await loadShelfLayout($('shelfSelect').value);
   });
-  state.part_types.forEach((pt) => {
-    const a = document.createElement('option'); a.value = pt.part_type_id; a.textContent = pt.part_type_id;
-    const b = document.createElement('option'); b.value = pt.part_type_id; b.textContent = pt.part_type_id;
-    p1.appendChild(a); p2.appendChild(b);
+  on('generateLayoutBtn', 'click', async () => {
+    try {
+      const layout = await postJson('/api/shelf/configure-graphic', {
+        shelf: $('shelfSelect').value,
+        part_type_id: $('layoutPartType').value,
+        cols: Number($('layoutCols').value),
+        rows: Number($('layoutRows').value),
+        z_mm: Number($('layoutZ').value),
+      });
+      renderShelfSvg(layout);
+      renderCoords(layout);
+      renderKv('shelfResult', { shelf: layout.shelf, slots: layout.slots.length });
+    } catch (error) {
+      alert(error.message);
+    }
   });
-
-  await loadShelfLayout(shelfSel.value || state.active_shelf);
-
-  document.getElementById('loadShelfBtn').addEventListener('click', async () => {
-    await loadShelfLayout(shelfSel.value);
+  on('manualLoadBtn', 'click', async () => {
+    await postJson('/api/shelf/slot/update', {
+      shelf: $('shelfSelect').value,
+      slot_no: Number($('manualSlotNo').value),
+      occupied: true,
+      status: $('manualStatus').value,
+      part_type_id: $('manualPartType').value,
+    });
+    await loadShelfLayout($('shelfSelect').value);
   });
-
-  document.getElementById('generateLayoutBtn').addEventListener('click', async () => {
-    const payload = {
-      shelf: shelfSel.value,
-      part_type_id: p1.value,
-      cols: Number(document.getElementById('layoutCols').value),
-      rows: Number(document.getElementById('layoutRows').value),
-      z_mm: Number(document.getElementById('layoutZ').value),
-    };
-    const r = await fetch('/api/shelf/configure-graphic', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    if (!r.ok) return alert(d.error || 'Feil');
-    renderShelfSvg(d);
-    renderCoords(d);
-    renderKeyValues('shelfResult', { shelf: d.shelf, slots: d.slots.length, part_type: payload.part_type_id });
-  });
-
-  document.getElementById('manualLoadBtn').addEventListener('click', async () => {
-    const payload = { shelf: shelfSel.value, slot_no: Number(document.getElementById('manualSlotNo').value), occupied: true, status: document.getElementById('manualStatus').value, part_type_id: p2.value };
-    const r = await fetch('/api/shelf/slot/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    if (!r.ok) return alert(d.error || 'Feil');
-    await loadShelfLayout(shelfSel.value);
-    renderKeyValues('shelfResult', d);
-  });
-
-  document.getElementById('manualUnloadBtn').addEventListener('click', async () => {
-    const payload = { shelf: shelfSel.value, slot_no: Number(document.getElementById('manualSlotNo').value), occupied: false, status: 'empty', part_type_id: '' };
-    const r = await fetch('/api/shelf/slot/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    if (!r.ok) return alert(d.error || 'Feil');
-    await loadShelfLayout(shelfSel.value);
-    renderKeyValues('shelfResult', d);
+  on('manualUnloadBtn', 'click', async () => {
+    await postJson('/api/shelf/slot/update', {
+      shelf: $('shelfSelect').value,
+      slot_no: Number($('manualSlotNo').value),
+      occupied: false,
+      status: 'empty',
+      part_type_id: '',
+    });
+    await loadShelfLayout($('shelfSelect').value);
   });
 }
 
 async function initParts() {
   const state = await getState();
-  const body = document.getElementById('partsTable');
-  state.part_types.forEach((p) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.part_type_id}</td><td>${p.name}</td><td>${p.diameter_mm}</td><td>${p.length_mm}</td><td>${p.height_mm}</td><td>${p.quantity_total}</td>`;
-    body.appendChild(tr);
+  renderInventory(state);
+  const body = $('partsTable');
+  if (body) {
+    body.innerHTML = '';
+    state.part_types.forEach((part) => {
+      const tr = document.createElement('tr');
+      tr.append(
+        makeCell(part.part_type_id),
+        makeCell(part.name),
+        makeCell(part.product_id),
+        makeCell(part.diameter_mm),
+        makeCell(part.length_mm),
+        makeCell(part.height_mm),
+        makeCell(part.quantity_total),
+      );
+      body.appendChild(tr);
+    });
+  }
+  on('savePartBtn', 'click', async () => {
+    try {
+      await postJson('/api/parts', {
+        part_type_id: $('partTypeId').value,
+        name: $('partName').value,
+        product_id: $('partProductId').value,
+        quantity_total: Number($('partQty').value),
+        diameter_mm: Number($('partDia').value),
+        length_mm: Number($('partLen').value),
+        height_mm: Number($('partHeight').value),
+      });
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
   });
+}
 
-  document.getElementById('savePartBtn').addEventListener('click', async () => {
-    const payload = {
-      part_type_id: document.getElementById('partTypeId').value,
-      name: document.getElementById('partName').value,
-      product_id: document.getElementById('partProductId').value,
-      quantity_total: Number(document.getElementById('partQty').value),
-      diameter_mm: Number(document.getElementById('partDia').value),
-      length_mm: Number(document.getElementById('partLen').value),
-      height_mm: Number(document.getElementById('partHeight').value),
-    };
-    const r = await fetch('/api/parts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    if (!r.ok) return alert(d.error || 'Feil');
-    location.reload();
+function renderDynamicFields(containerId, paramNames) {
+  const container = $(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  (paramNames || []).forEach((name) => {
+    const label = document.createElement('label');
+    label.textContent = name;
+    const input = document.createElement('input');
+    input.dataset.name = name;
+    input.placeholder = name;
+    label.appendChild(input);
+    container.appendChild(label);
   });
+}
+
+function readDynamicFields(containerId) {
+  const out = {};
+  const container = $(containerId);
+  if (!container) return out;
+  container.querySelectorAll('input').forEach((input) => {
+    out[input.dataset.name] = input.value;
+  });
+  return out;
 }
 
 async function initCnc() {
   const state = await getState();
-  renderKeyValues('cncStatus', state.cnc);
-  const sel = document.getElementById('focasFunction');
-  state.available_focas_functions.forEach((fn) => {
-    const o = document.createElement('option'); o.value = fn; o.textContent = fn; sel.appendChild(o);
-  });
+  renderMachineStatus(state);
+  setupProgramControls(state);
+  fillSelect('focasFunction', state.available_focas_functions, (fn) => fn, (fn) => fn);
   const paramMap = state.focas_function_params || {};
-  renderDynamicFields('focasFields', schemaFromParamNames(paramMap[sel.value]));
-  sel.addEventListener('change', () => renderDynamicFields('focasFields', schemaFromParamNames(paramMap[sel.value])));
-  document.getElementById('runFocasBtn').addEventListener('click', async () => {
-    const payload = { function_name: sel.value, params: readDynamicFields('focasFields') };
-    const r = await fetch('/api/cnc/focas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    document.getElementById('focasResponse').textContent = JSON.stringify(d, null, 2);
+  renderDynamicFields('focasFields', paramMap[$('focasFunction')?.value]);
+  on('focasFunction', 'change', () => renderDynamicFields('focasFields', paramMap[$('focasFunction').value]));
+  on('runFocasBtn', 'click', async () => {
+    try {
+      const data = await postJson('/api/cnc/focas', {
+        function_name: $('focasFunction').value,
+        params: readDynamicFields('focasFields'),
+      });
+      $('focasResponse').textContent = JSON.stringify(data, null, 2);
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
   });
 }
 
 async function initLift() {
   const state = await getState();
-  renderKeyValues('liftStatus', state.lift);
-  const sel = document.getElementById('liftFunction');
-  state.available_leanlift_rest_commands.forEach((fn) => {
-    const o = document.createElement('option'); o.value = fn; o.textContent = fn; sel.appendChild(o);
-  });
+  renderMachineStatus(state);
+  fillSelect('liftFunction', state.available_leanlift_rest_commands, (fn) => fn, (fn) => fn);
   const paramMap = state.leanlift_command_params || {};
-  renderDynamicFields('liftFields', schemaFromParamNames(paramMap[sel.value]));
-  sel.addEventListener('change', () => renderDynamicFields('liftFields', schemaFromParamNames(paramMap[sel.value])));
-  document.getElementById('runLiftBtn').addEventListener('click', async () => {
-    const payload = { function_name: sel.value, params: readDynamicFields('liftFields') };
-    const r = await fetch('/api/lift/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    const d = await r.json();
-    document.getElementById('liftResponse').textContent = JSON.stringify(d, null, 2);
-    const s = await getState();
-    renderKeyValues('liftStatus', s.lift);
+  renderDynamicFields('liftFields', paramMap[$('liftFunction')?.value]);
+  on('liftFunction', 'change', () => renderDynamicFields('liftFields', paramMap[$('liftFunction').value]));
+  on('runLiftBtn', 'click', async () => {
+    try {
+      const data = await postJson('/api/lift/command', {
+        function_name: $('liftFunction').value,
+        params: readDynamicFields('liftFields'),
+      });
+      $('liftResponse').textContent = JSON.stringify(data, null, 2);
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('quickGetShelfBtn', 'click', async () => {
+    const data = await postJson('/api/lift/command', { function_name: 'get_shelf', params: { pm01_shelfNumber: $('quickShelfNo').value } });
+    $('liftResponse').textContent = JSON.stringify(data, null, 2);
+    await refreshCurrentPage();
+  });
+  on('quickTransferBtn', 'click', async () => {
+    const data = await postJson('/api/lift/command', { function_name: 'shelf_transfer', params: { pm01_destinationAccessNumber: $('quickAccessPoint').value } });
+    $('liftResponse').textContent = JSON.stringify(data, null, 2);
+    await refreshCurrentPage();
+  });
+}
+
+function parseSignalValue(value) {
+  const text = String(value).trim();
+  if (['true', 'false'].includes(text.toLowerCase())) return text.toLowerCase() === 'true';
+  if (text !== '' && !Number.isNaN(Number(text))) return Number(text);
+  return text;
+}
+
+function fillSignalKeys() {
+  const group = $('signalGroup')?.value || 'safety';
+  fillSelect('signalKey', SIGNAL_KEYS[group] || [], (key) => key, (key) => key);
+}
+
+async function initOpcua() {
+  const state = await getState();
+  renderKv('opcuaStatus', state.opcua);
+  renderKv('opcuaLiveStatus', { endpoint: state.opcua.endpoint, namespace: state.opcua.namespace, nodes: state.opcua.node_count });
+  renderMachineStatus(state);
+  fillSignalKeys();
+  on('signalGroup', 'change', fillSignalKeys);
+  on('startOpcuaBtn', 'click', async () => {
+    const data = await postJson('/api/opcua/start');
+    renderKv('opcuaStatus', data);
+  });
+  on('sendOpcuaCommandBtn', 'click', async () => {
+    const data = await postJson('/api/opcua/signal', { command: $('opcuaCommandInput').value });
+    $('opcuaCommandResponse').textContent = JSON.stringify(data.production_order, null, 2);
+    renderMachineStatus(data);
+  });
+  on('sendSignalBtn', 'click', async () => {
+    const data = await postJson('/api/opcua/signal', {
+      group: $('signalGroup').value,
+      key: $('signalKey').value,
+      value: parseSignalValue($('signalValue').value),
+    });
+    renderMachineStatus(data);
+    renderKv('opcuaStatus', data.opcua);
   });
 }
 
 async function initStats() {
   const state = await getState();
-  renderKeyValues('statsList', state.stats);
-  const body = document.getElementById('historyTable');
-  body.innerHTML = '';
-  state.history.forEach((h) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${h.ts}</td><td>${h.category}</td><td>${h.message}</td>`;
-    body.appendChild(tr);
-  });
+  renderKv('statsList', state.stats);
+  renderKv('productionStatus', state.production_order);
+  renderEvents(state, 'historyTable', 150);
 }
 
 async function initDiagnostics() {
-  const r = await fetch('/api/diagnostics');
-  const data = await r.json();
-  const body = document.getElementById('diagTable');
-  body.innerHTML = '';
-  data.forEach((d) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${d.ts}</td><td>${d.channel}</td><td>${d.direction}</td><td><pre>${JSON.stringify(d.raw)}</pre></td>`;
-    body.appendChild(tr);
-  });
+  async function loadDiagnostics() {
+    const response = await fetch('/api/diagnostics');
+    const data = await response.json();
+    const body = $('diagTable');
+    if (!body) return;
+    body.innerHTML = '';
+    data.forEach((item) => {
+      const tr = document.createElement('tr');
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(item.raw);
+      tr.append(makeCell(item.ts), makeCell(item.channel), makeCell(item.direction));
+      const payload = document.createElement('td');
+      payload.appendChild(pre);
+      tr.appendChild(payload);
+      body.appendChild(tr);
+    });
+  }
+  on('refreshDiagnosticsBtn', 'click', loadDiagnostics);
+  await loadDiagnostics();
+}
+
+async function refreshCurrentPage() {
+  const page = document.body.dataset.page;
+  const state = await getState();
+  if (page === 'dashboard') {
+    renderDashboardState(state);
+    await loadShelfLayout(state.active_shelf);
+  }
+  if (page === 'opcua') {
+    renderKv('opcuaStatus', state.opcua);
+    renderMachineStatus(state);
+  }
+  if (page === 'parts') {
+    renderInventory(state);
+  }
+  if (page === 'cnc' || page === 'lift') {
+    renderMachineStatus(state);
+  }
 }
 
 (async function boot() {
@@ -299,6 +552,14 @@ async function initDiagnostics() {
   if (page === 'parts') await initParts();
   if (page === 'cnc') await initCnc();
   if (page === 'lift') await initLift();
+  if (page === 'opcua') await initOpcua();
   if (page === 'stats') await initStats();
   if (page === 'diagnostics') await initDiagnostics();
-})();
+
+  if (page === 'dashboard' || page === 'opcua') {
+    setInterval(refreshCurrentPage, 2500);
+  }
+})().catch((error) => {
+  console.error(error);
+  alert(error.message);
+});

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OPC UA</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="opcua">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <div class="section-title">
+            <h1>OPC UA simulator</h1>
+            <button id="startOpcuaBtn">Start server</button>
+          </div>
+          <dl id="opcuaStatus" class="kv"></dl>
+        </article>
+
+        <article class="card">
+          <h2>Kommando</h2>
+          <div class="inline-command">
+            <input id="opcuaCommandInput" placeholder="GET_SHELF 7" />
+            <button id="sendOpcuaCommandBtn">Send</button>
+          </div>
+          <pre id="opcuaCommandResponse"></pre>
+        </article>
+      </section>
+
+      <section class="layout-2">
+        <article class="card">
+          <h2>Skriv signal</h2>
+          <div class="form-grid">
+            <label>Gruppe<select id="signalGroup"><option value="safety">Safety</option><option value="leanlift">LeanLift</option><option value="robot">Robot</option><option value="cnc">CNC</option></select></label>
+            <label>Signal<select id="signalKey"></select></label>
+            <label>Verdi<input id="signalValue" value="true" /></label>
+          </div>
+          <button id="sendSignalBtn">Skriv</button>
+        </article>
+        <article class="card">
+          <h2>Live status</h2>
+          <dl id="opcuaLiveStatus" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="machine-grid">
+        <article class="card compact"><h2>Safety</h2><dl id="safetyStatus" class="kv"></dl></article>
+        <article class="card compact"><h2>LeanLift</h2><dl id="liftStatus" class="kv"></dl></article>
+        <article class="card compact"><h2>Robot</h2><dl id="robotStatus" class="kv"></dl></article>
+        <article class="card compact"><h2>CNC</h2><dl id="cncStatus" class="kv"></dl></article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
