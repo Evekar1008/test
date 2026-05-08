@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from io import BytesIO
 from uuid import uuid4
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
+from openpyxl import Workbook, load_workbook
 from werkzeug.utils import secure_filename
 
 from cell_service import ProductionCellService
@@ -77,6 +79,57 @@ def api_shelf_layout(shelf: str):
         return jsonify({"error": str(exc)}), 400
 
 
+@app.get("/api/leanlift/shelf-layout/<shelf>/export")
+def api_shelf_layout_export(shelf: str):
+    try:
+        rows = service.export_shelf_layout_rows(shelf)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = f"Shelf {shelf}"
+    sheet.append(["slot_no", "x_mm", "y_mm", "z_mm", "part_no"])
+    for row in rows:
+        sheet.append([row["slot_no"], row["x_mm"], row["y_mm"], row["z_mm"], row["part_no"]])
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"shelf_{shelf}_layout.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.post("/api/leanlift/shelf-layout/<shelf>/import")
+def api_shelf_layout_import(shelf: str):
+    uploaded_file = request.files.get("file")
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({"error": "Layout file is required"}), 400
+    try:
+        workbook = load_workbook(uploaded_file.stream, data_only=True)
+        sheet = workbook.active
+        headers = [str(cell.value or "").strip().lower() for cell in next(sheet.iter_rows(min_row=1, max_row=1))]
+        rows = []
+        for values in sheet.iter_rows(min_row=2, values_only=True):
+            if not values or all(value in {None, ""} for value in values):
+                continue
+            row = {header: values[index] if index < len(values) else "" for index, header in enumerate(headers)}
+            rows.append(row)
+        return jsonify(
+            service.import_shelf_layout_rows(
+                shelf,
+                request.form.get("part_type_id", ""),
+                rows,
+                float(request.form.get("part_clearance_mm", service.settings["part_clearance_mm"])),
+                float(request.form.get("wall_clearance_mm", service.settings["wall_clearance_mm"])),
+            )
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 @app.post("/api/settings")
 def api_settings():
     try:
@@ -96,6 +149,8 @@ def api_shelf_configure_graphic():
                 int(payload.get("cols", 4)),
                 int(payload.get("rows", 3)),
                 float(payload.get("z_mm", 100)),
+                float(payload.get("part_clearance_mm", service.settings["part_clearance_mm"])),
+                float(payload.get("wall_clearance_mm", service.settings["wall_clearance_mm"])),
             )
         )
     except ValueError as exc:
@@ -214,6 +269,22 @@ def api_lift_command():
     payload = request.get_json(force=True)
     try:
         return jsonify(service.call_lift_rest(payload.get("function_name", ""), payload.get("params", {})))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.post("/api/lift/request-shelf")
+def api_lift_request_shelf():
+    payload = request.get_json(force=True)
+    try:
+        return jsonify(
+            service.request_shelf(
+                str(payload.get("shelf", "")),
+                int(payload.get("access_point", service.lift_status["operator_access_point"])),
+                payload.get("actor", "operator"),
+                bool(payload.get("override", False)),
+            )
+        )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 

@@ -25,6 +25,8 @@
             <label>Bredde mm<input id="shelfWidth" type="number" min="1" /></label>
             <label>Dybde mm<input id="shelfDepth" type="number" min="1" /></label>
             <label>Standard Z mm<input id="shelfHeight" type="number" min="1" /></label>
+            <label>Klaring deler mm<input id="partClearance" type="number" min="0" /></label>
+            <label>Klaring vegg mm<input id="wallClearance" type="number" min="0" /></label>
           </div>
           <button id="saveSettingsBtn">Lagre mal</button>
 
@@ -34,8 +36,17 @@
             <label>Kolonner<input id="layoutCols" type="number" value="4" min="1" /></label>
             <label>Rader<input id="layoutRows" type="number" value="3" min="1" /></label>
             <label>Z mm<input id="layoutZ" type="number" value="95" min="1" /></label>
+            <label>Klaring deler mm<input id="layoutPartClearance" type="number" value="20" min="0" /></label>
+            <label>Klaring vegg mm<input id="layoutWallClearance" type="number" value="50" min="0" /></label>
           </div>
-          <button id="generateLayoutBtn">Generer hylle</button>
+          <div class="actions">
+            <button id="generateLayoutBtn">Generer hylle</button>
+            <button id="exportLayoutBtn" class="secondary">Eksporter Excel</button>
+          </div>
+          <div class="form-grid">
+            <label>Importer Excel<input id="layoutImportFile" type="file" accept=".xlsx" /></label>
+          </div>
+          <button id="importLayoutBtn" class="secondary">Importer layout</button>
           <dl id="shelfResult" class="kv"></dl>
         </article>
       </section>

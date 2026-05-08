@@ -74,9 +74,16 @@
       <section class="layout-2 wide-left">
         <article class="card">
           <div class="section-title">
-            <h2>Aktiv hylle</h2>
-            <select id="dashboardShelfSelect"></select>
+            <h2>Hylle ved uttak</h2>
           </div>
+          <div class="form-grid">
+            <label>Hylle<select id="dashboardShelfSelect"></select></label>
+            <label>Uttak<select id="dashboardAccessPoint"><option value="1">Operatøruttak ute</option><option value="2">Robotuttak service</option></select></label>
+          </div>
+          <div class="actions">
+            <button id="requestShelfBtn">OK hent hylle</button>
+          </div>
+          <dl id="liftAccessStatus" class="kv"></dl>
           <svg id="shelfSvg" viewBox="0 0 1000 450" role="img"></svg>
           <div id="shelfInfo" class="muted"></div>
         </article>

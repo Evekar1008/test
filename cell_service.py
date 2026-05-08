@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
 import json
+import math
 import re
 from typing import Any, Dict, List
 
@@ -45,6 +46,8 @@ class ProductionCellService:
             "shelf_width_mm": 2000,
             "shelf_depth_mm": 800,
             "shelf_height_mm": 120,
+            "part_clearance_mm": 20,
+            "wall_clearance_mm": 50,
             "status_colors": {
                 "empty": "#d8dee9",
                 "raw": "#2f80ed",
@@ -114,6 +117,11 @@ class ProductionCellService:
             "mode": "Auto",
             "current_shelf": "1",
             "access_point": 2,
+            "robot_access_point": 2,
+            "operator_access_point": 1,
+            "robot_shelf": "1",
+            "operator_shelf": "1",
+            "last_actor": "system",
             "tray_present": True,
             "tray_extended": False,
             "door_closed": True,
@@ -192,18 +200,46 @@ class ProductionCellService:
         fallback = ["get_shelf", "store_shelf", "read_status"]
         return fallback, {cmd: [] for cmd in fallback}
 
-    def _generate_slots(self, cols: int, rows: int, z_mm: float | None = None) -> List[Dict[str, Any]]:
+    def _generate_slots(
+        self,
+        cols: int,
+        rows: int,
+        z_mm: float | None = None,
+        part_diameter_mm: float | None = None,
+        part_clearance_mm: float | None = None,
+        wall_clearance_mm: float | None = None,
+    ) -> List[Dict[str, Any]]:
         slots: List[Dict[str, Any]] = []
         slot_no = 1
-        x_spacing = self.settings["shelf_width_mm"] / (cols + 1)
-        y_spacing = self.settings["shelf_depth_mm"] / (rows + 1)
+        if part_diameter_mm is not None:
+            diameter = float(part_diameter_mm)
+            clearance = float(self.settings["part_clearance_mm"] if part_clearance_mm is None else part_clearance_mm)
+            wall_clearance = float(self.settings["wall_clearance_mm"] if wall_clearance_mm is None else wall_clearance_mm)
+            if diameter <= 0 or clearance < 0 or wall_clearance < 0:
+                raise ValueError("Part diameter and clearances must be valid positive values")
+            required_width = 2 * wall_clearance + cols * diameter + (cols - 1) * clearance
+            required_depth = 2 * wall_clearance + rows * diameter + (rows - 1) * clearance
+            if required_width > self.settings["shelf_width_mm"] or required_depth > self.settings["shelf_depth_mm"]:
+                raise ValueError(
+                    "Layout does not fit on shelf with selected part size and clearances "
+                    f"({required_width:.1f} x {required_depth:.1f} mm required)"
+                )
+            x_spacing = diameter + clearance
+            y_spacing = diameter + clearance
+            x_start = wall_clearance + diameter / 2
+            y_start = wall_clearance + diameter / 2
+        else:
+            x_spacing = self.settings["shelf_width_mm"] / (cols + 1)
+            y_spacing = self.settings["shelf_depth_mm"] / (rows + 1)
+            x_start = x_spacing
+            y_start = y_spacing
         for row in range(rows):
             for col in range(cols):
                 slots.append(
                     {
                         "slot_no": slot_no,
-                        "x_mm": round((col + 1) * x_spacing, 2),
-                        "y_mm": round((row + 1) * y_spacing, 2),
+                        "x_mm": round(x_start + col * x_spacing, 2),
+                        "y_mm": round(y_start + row * y_spacing, 2),
                         "z_mm": float(z_mm if z_mm is not None else self.settings["shelf_height_mm"]),
                         "occupied": False,
                         "status": "empty",
@@ -300,6 +336,63 @@ class ProductionCellService:
             "fifo_seq": slot.get("fifo_seq"),
         }
 
+    def _validate_slot_clearance(
+        self,
+        slots: List[Dict[str, Any]],
+        part_diameter_mm: float,
+        part_clearance_mm: float,
+        wall_clearance_mm: float,
+    ) -> None:
+        diameter = float(part_diameter_mm)
+        clearance = float(part_clearance_mm)
+        wall_clearance = float(wall_clearance_mm)
+        if diameter <= 0 or clearance < 0 or wall_clearance < 0:
+            raise ValueError("Part diameter and clearances must be valid positive values")
+        radius = diameter / 2
+        width = float(self.settings["shelf_width_mm"])
+        depth = float(self.settings["shelf_depth_mm"])
+        for slot in slots:
+            x = float(slot["x_mm"])
+            y = float(slot["y_mm"])
+            if x - radius < wall_clearance or x + radius > width - wall_clearance:
+                raise ValueError(f"Slot {slot['slot_no']} violates wall clearance in X direction")
+            if y - radius < wall_clearance or y + radius > depth - wall_clearance:
+                raise ValueError(f"Slot {slot['slot_no']} violates wall clearance in Y direction")
+
+        minimum_distance = diameter + clearance
+        for index, first in enumerate(slots):
+            for second in slots[index + 1 :]:
+                distance = math.hypot(float(first["x_mm"]) - float(second["x_mm"]), float(first["y_mm"]) - float(second["y_mm"]))
+                if distance + 0.001 < minimum_distance:
+                    raise ValueError(f"Slot {first['slot_no']} overlaps slot {second['slot_no']}")
+
+    def _apply_lift_position(self, shelf: str, access_point: int, actor: str = "system") -> None:
+        self.lift_status["current_shelf"] = shelf
+        self.lift_status["access_point"] = int(access_point)
+        self.lift_status["last_actor"] = actor
+        if int(access_point) == int(self.lift_status["robot_access_point"]):
+            self.lift_status["robot_shelf"] = shelf
+        if int(access_point) == int(self.lift_status["operator_access_point"]):
+            self.lift_status["operator_shelf"] = shelf
+        self.active_shelf = shelf
+
+    def request_shelf(self, shelf: str, access_point: int = 1, actor: str = "operator", override: bool = False) -> Dict[str, Any]:
+        with self.lock:
+            shelf = str(shelf)
+            access_point = int(access_point)
+            if shelf not in self.shelves:
+                raise ValueError("Unknown shelf")
+            if access_point not in {int(self.lift_status["operator_access_point"]), int(self.lift_status["robot_access_point"])}:
+                raise ValueError("Unknown lift access point")
+            if access_point == int(self.lift_status["robot_access_point"]) and actor != "robot" and not override:
+                raise ValueError("Robot access point requires robot request or service override")
+            command = self.call_lift_rest(
+                "get_shelf",
+                {"pm01_shelfNumber": shelf, "pm01_accessPoint": access_point, "actor": actor, "override": override},
+            )
+            self._log("lift", f"{actor} requested shelf {shelf} to access point {access_point}")
+            return command
+
     def _set_robot_target(self, target: Dict[str, Any] | None) -> None:
         self.robot_status["next_pick"] = target
         self.production_order["next_pick"] = target
@@ -320,9 +413,7 @@ class ProductionCellService:
             return None
         selected = candidates[0]
         target = self._slot_target(selected["shelf"], selected["slot"])
-        self.active_shelf = selected["shelf"]
-        self.lift_status["current_shelf"] = selected["shelf"]
-        self.lift_status["access_point"] = 2
+        self._apply_lift_position(selected["shelf"], int(self.lift_status["robot_access_point"]), actor="robot")
         self.lift_status["tray_present"] = True
         self._set_robot_target(target)
         return target
@@ -346,6 +437,8 @@ class ProductionCellService:
                 "shelf_width_mm": self.settings["shelf_width_mm"],
                 "shelf_depth_mm": self.settings["shelf_depth_mm"],
                 "shelf_height_mm": self.settings["shelf_height_mm"],
+                "part_clearance_mm": self.settings["part_clearance_mm"],
+                "wall_clearance_mm": self.settings["wall_clearance_mm"],
                 "status_colors": self.settings["status_colors"],
                 "slots": [self._enrich_slot(slot) for slot in self.shelf_slots[shelf]],
             }
@@ -395,10 +488,13 @@ class ProductionCellService:
 
     def update_settings(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         with self.lock:
-            for key in ("shelf_width_mm", "shelf_depth_mm", "shelf_height_mm"):
+            for key in ("shelf_width_mm", "shelf_depth_mm", "shelf_height_mm", "part_clearance_mm", "wall_clearance_mm"):
                 if key in payload:
                     value = float(payload[key])
-                    if value <= 0:
+                    if key in {"part_clearance_mm", "wall_clearance_mm"}:
+                        if value < 0:
+                            raise ValueError(f"{key} must be zero or greater")
+                    elif value <= 0:
                         raise ValueError(f"{key} must be greater than zero")
                     self.settings[key] = value
             if "status_colors" in payload and isinstance(payload["status_colors"], dict):
@@ -406,18 +502,105 @@ class ProductionCellService:
             self._log("settings", "Updated shelf/status settings")
             return self.settings
 
-    def configure_shelf_layout_graphic(self, shelf: str, part_type_id: str, cols: int, rows: int, z_mm: float) -> Dict[str, Any]:
+    def configure_shelf_layout_graphic(
+        self,
+        shelf: str,
+        part_type_id: str,
+        cols: int,
+        rows: int,
+        z_mm: float,
+        part_clearance_mm: float | None = None,
+        wall_clearance_mm: float | None = None,
+    ) -> Dict[str, Any]:
         with self.lock:
             if shelf not in self.shelves:
                 raise ValueError("Unknown shelf")
             if cols <= 0 or rows <= 0 or cols * rows > 120:
                 raise ValueError("Layout must contain 1-120 locations")
-            self._get_part_type(part_type_id)
-            slots = self._generate_slots(cols, rows, z_mm)
+            part_type = self._get_part_type(part_type_id)
+            clearance = float(self.settings["part_clearance_mm"] if part_clearance_mm is None else part_clearance_mm)
+            wall_clearance = float(self.settings["wall_clearance_mm"] if wall_clearance_mm is None else wall_clearance_mm)
+            slots = self._generate_slots(cols, rows, z_mm, float(part_type["diameter_mm"]), clearance, wall_clearance)
+            self._validate_slot_clearance(slots, float(part_type["diameter_mm"]), clearance, wall_clearance)
             for index, slot in enumerate(slots, start=1):
                 self._mark_slot_loaded(slot, part_type_id, index, "raw")
             self.shelf_slots[shelf] = slots
-            self._log("shelf", f"Configured shelf {shelf} with {len(slots)} production locations")
+            self.settings["part_clearance_mm"] = clearance
+            self.settings["wall_clearance_mm"] = wall_clearance
+            self._log("shelf", f"Configured shelf {shelf} with {len(slots)} production locations and clearance validation")
+            return self.get_shelf_layout(shelf)
+
+    def export_shelf_layout_rows(self, shelf: str) -> List[Dict[str, Any]]:
+        with self.lock:
+            if shelf not in self.shelves:
+                raise ValueError("Unknown shelf")
+            return [
+                {
+                    "slot_no": int(slot["slot_no"]),
+                    "x_mm": float(slot["x_mm"]),
+                    "y_mm": float(slot["y_mm"]),
+                    "z_mm": float(slot["z_mm"]),
+                    "part_no": slot.get("part_no") or "",
+                }
+                for slot in self.shelf_slots[shelf]
+            ]
+
+    def import_shelf_layout_rows(
+        self,
+        shelf: str,
+        part_type_id: str,
+        rows: List[Dict[str, Any]],
+        part_clearance_mm: float | None = None,
+        wall_clearance_mm: float | None = None,
+    ) -> Dict[str, Any]:
+        with self.lock:
+            if shelf not in self.shelves:
+                raise ValueError("Unknown shelf")
+            part_type = self._get_part_type(part_type_id)
+            if not rows or len(rows) > 120:
+                raise ValueError("Imported layout must contain 1-120 locations")
+            clearance = float(self.settings["part_clearance_mm"] if part_clearance_mm is None else part_clearance_mm)
+            wall_clearance = float(self.settings["wall_clearance_mm"] if wall_clearance_mm is None else wall_clearance_mm)
+            slots: List[Dict[str, Any]] = []
+            seen: set[int] = set()
+            part_numbers_by_slot: Dict[int, int | None] = {}
+            for index, row in enumerate(rows, start=1):
+                slot_no = int(row.get("slot_no") or index)
+                if slot_no in seen:
+                    raise ValueError(f"Duplicate slot number {slot_no}")
+                seen.add(slot_no)
+                x_mm = float(row["x_mm"])
+                y_mm = float(row["y_mm"])
+                z_value = row.get("z_mm", self.settings["shelf_height_mm"])
+                z_mm = float(self.settings["shelf_height_mm"] if z_value in {"", None} else z_value)
+                if x_mm <= 0 or y_mm <= 0 or z_mm <= 0:
+                    raise ValueError(f"Slot {slot_no} contains invalid coordinates")
+                slots.append(
+                    {
+                        "slot_no": slot_no,
+                        "x_mm": round(x_mm, 2),
+                        "y_mm": round(y_mm, 2),
+                        "z_mm": round(z_mm, 2),
+                        "occupied": False,
+                        "status": "empty",
+                        "part_type_id": "",
+                        "part_no": None,
+                        "fifo_seq": None,
+                        "loaded_at": None,
+                    }
+                )
+                raw_part_no = row.get("part_no")
+                part_text = str(raw_part_no).strip() if raw_part_no is not None else ""
+                part_numbers_by_slot[slot_no] = int(float(part_text)) if part_text else None
+
+            self._validate_slot_clearance(slots, float(part_type["diameter_mm"]), clearance, wall_clearance)
+            for slot in slots:
+                part_no = part_numbers_by_slot.get(slot["slot_no"]) or slot["slot_no"]
+                self._mark_slot_loaded(slot, part_type_id, part_no, "raw")
+            self.shelf_slots[shelf] = sorted(slots, key=lambda item: item["slot_no"])
+            self.settings["part_clearance_mm"] = clearance
+            self.settings["wall_clearance_mm"] = wall_clearance
+            self._log("shelf", f"Imported layout for shelf {shelf} with {len(slots)} locations")
             return self.get_shelf_layout(shelf)
 
     def update_slot(self, shelf: str, slot_no: int, occupied: bool, status: str, part_type_id: str | None) -> Dict[str, Any]:
@@ -592,7 +775,7 @@ class ProductionCellService:
             job["status"] = "running"
             job["last_started_at"] = self._now()
             self._prepare_next_pick()
-            self.call_lift_rest("get_shelf", {"pm01_shelfNumber": first["shelf"]})
+            self.call_lift_rest("get_shelf", {"pm01_shelfNumber": first["shelf"], "pm01_accessPoint": self.lift_status["robot_access_point"], "actor": "robot"})
             self._log("production", f"Started job {job['job_id']} with FIFO shelf {first['shelf']} slot {first['slot']['slot_no']}")
             return self.production_order
 
@@ -740,11 +923,18 @@ class ProductionCellService:
             if function_name in ["get_shelf", "getShelfV02", "add_shelf", "remove_shelf", "get_shelf_backgr"]:
                 shelf = str(params.get("pm01_shelfNumber", params.get("shelf", self.lift_status["current_shelf"])))
                 if shelf in self.shelves:
-                    self.lift_status["current_shelf"] = shelf
-                    self.active_shelf = shelf
+                    access_point = int(params.get("pm01_accessPoint", params.get("pm01_accessNumber", params.get("access_point", self.lift_status["access_point"]))) or self.lift_status["access_point"])
+                    self._apply_lift_position(shelf, access_point, str(params.get("actor", "host-web")))
             if function_name == "shelf_transfer":
                 self.lift_status["access_point"] = int(params.get("pm01_destinationAccessNumber", self.lift_status["access_point"]) or self.lift_status["access_point"])
-            response = {"command": function_name, "accepted": True, "current_shelf": self.lift_status["current_shelf"], "access_point": self.lift_status["access_point"]}
+            response = {
+                "command": function_name,
+                "accepted": True,
+                "current_shelf": self.lift_status["current_shelf"],
+                "access_point": self.lift_status["access_point"],
+                "robot_shelf": self.lift_status["robot_shelf"],
+                "operator_shelf": self.lift_status["operator_shelf"],
+            }
             self.lift_status["last_response"] = str(response)
             out = {"function": function_name, "params": params, "response": response}
             self._diag("lift", "rx", out)
@@ -843,8 +1033,8 @@ class ProductionCellService:
                 "safety": {"safetyok": "safety_ok", "emergencystopactive": "emergency_stop_active", "gatesclosed": "gates_closed", "scannerclear": "scanner_clear", "mode": "mode_key", "modekey": "mode_key"},
                 "robot": {"ready": "ready", "busy": "busy", "fault": "fault", "athome": "at_home", "partingripper": "part_in_gripper", "stationcomplete": "station_complete", "activetask": "active_task", "statusmessage": "status_message"},
                 "cnc": {"machineready": "machine_ready", "cyclerunning": "cycle_running", "cyclecomplete": "cycle_complete", "alarmactive": "alarm_active", "partpresent": "part_present", "selectedprogram": "selected_program", "loadedprogram": "loaded_program", "programsource": "program_source", "programtransferstate": "program_transfer_state", "statusmessage": "status_message"},
-                "leanlift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
-                "lift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
+                "leanlift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "robotshelf": "robot_shelf", "operatorshelf": "operator_shelf", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
+                "lift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "robotshelf": "robot_shelf", "operatorshelf": "operator_shelf", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
             }
 
             applied: Dict[str, Any] = {}
@@ -911,6 +1101,10 @@ class ProductionCellService:
         current_shelf = str(self.lift_status["current_shelf"])
         if current_shelf in self.shelves:
             self.active_shelf = current_shelf
+            if int(self.lift_status["access_point"]) == int(self.lift_status["robot_access_point"]):
+                self.lift_status["robot_shelf"] = current_shelf
+            if int(self.lift_status["access_point"]) == int(self.lift_status["operator_access_point"]):
+                self.lift_status["operator_shelf"] = current_shelf
 
     def apply_sim_command(self, command: str, source: str = "web") -> Dict[str, Any]:
         with self.lock:
@@ -922,7 +1116,8 @@ class ProductionCellService:
             arg = parts[1] if len(parts) > 1 else ""
 
             if name in {"GET_SHELF", "SHELF"} and arg:
-                self.call_lift_rest("get_shelf", {"pm01_shelfNumber": arg})
+                access_point = int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else int(self.lift_status["operator_access_point"])
+                self.request_shelf(arg, access_point, actor="opcua" if source == "opcua" else "operator", override=access_point == int(self.lift_status["robot_access_point"]))
             elif name == "TRAY_EXTEND":
                 self.update_machine_signals(source, {"leanlift": {"tray_extended": True, "tray_present": True}})
             elif name in {"TRAY_HOME", "TRAY_RETRACT"}:

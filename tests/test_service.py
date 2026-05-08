@@ -73,10 +73,51 @@ def test_set_shelf_status_changes_all_occupied_locations_only():
 
 def test_graphic_layout_and_manual_load_unload():
     service = ProductionCellService()
-    layout = service.configure_shelf_layout_graphic("5", "PT-RAW-120", 2, 2, 95)
+    layout = service.configure_shelf_layout_graphic("5", "PT-RAW-120", 2, 2, 95, 20, 50)
     assert len(layout["slots"]) == 4
+    assert layout["slots"][0]["x_mm"] == 110
+    assert layout["slots"][1]["x_mm"] == 250
     updated = service.update_slot("5", 1, False, "empty", "")
     assert updated["occupied"] is False
+
+
+def test_layout_clearance_rejects_overlap_or_wall_collision():
+    service = ProductionCellService()
+    try:
+        service.configure_shelf_layout_graphic("5", "PT-RAW-280", 6, 3, 140, 120, 300)
+    except ValueError as exc:
+        assert "does not fit" in str(exc)
+    else:
+        raise AssertionError("Expected layout size validation error")
+
+
+def test_imported_layout_rows_are_validated_and_loaded():
+    service = ProductionCellService()
+    rows = [
+        {"slot_no": 1, "x_mm": 110, "y_mm": 110, "z_mm": 95, "part_no": 10},
+        {"slot_no": 2, "x_mm": 250, "y_mm": 110, "z_mm": 95, "part_no": 11},
+    ]
+    layout = service.import_shelf_layout_rows("8", "PT-RAW-120", rows, 20, 50)
+
+    assert len(layout["slots"]) == 2
+    assert layout["slots"][0]["part_no"] == 10
+    assert layout["slots"][1]["status"] == "raw"
+
+
+def test_lift_access_points_separate_operator_and_robot_requests():
+    service = ProductionCellService()
+    service.request_shelf("4", access_point=1, actor="operator")
+    assert service.lift_status["operator_shelf"] == "4"
+
+    try:
+        service.request_shelf("7", access_point=2, actor="operator")
+    except ValueError as exc:
+        assert "service override" in str(exc)
+    else:
+        raise AssertionError("Expected robot access validation error")
+
+    service.request_shelf("7", access_point=2, actor="service", override=True)
+    assert service.lift_status["robot_shelf"] == "7"
 
 
 def test_focas_and_lift_and_diagnostics():
