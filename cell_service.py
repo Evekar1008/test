@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import RLock
 import json
+import re
 from typing import Any, Dict, List
 
 
@@ -25,6 +26,9 @@ class ProductionCellService:
     def __init__(self) -> None:
         self.lock = RLock()
         self.base_dir = Path(__file__).resolve().parent
+        self.upload_dir = self.base_dir / "uploads" / "nc_programs"
+        self.inventory_sequence = 0
+        self.job_sequence = 0
 
         self.products: List[Product] = [
             Product("P1001", "Aksel O120", "42CrMo4", 120, 95, "O1200", ["O1200", "O1201"]),
@@ -78,6 +82,8 @@ class ProductionCellService:
             "part_in_gripper": False,
             "station_complete": False,
             "active_task": "Idle",
+            "next_pick": None,
+            "place_target": None,
             "status_message": "Ready",
             "alarms": [],
         }
@@ -93,6 +99,9 @@ class ProductionCellService:
             "machine_state": "Ready",
             "selected_program": "O1200",
             "program_valid": True,
+            "loaded_program": "O1200",
+            "program_source": "cnc_existing",
+            "program_transfer_state": "Idle",
             "spindle_rpm": 0,
             "feed_rate": 0,
             "alarm": "None",
@@ -115,15 +124,28 @@ class ProductionCellService:
 
         self.production_order = {
             "active": False,
+            "job_id": "",
+            "job_name": "",
             "part_type_id": "",
             "product_id": "",
             "target_qty": 0,
             "processed_qty": 0,
             "mode": "quantity",
             "selected_program": self.cnc_status["selected_program"],
+            "program_source": self.cnc_status["program_source"],
+            "next_pick": None,
             "state": "Idle",
         }
         self.simulation = {"running": False, "tick": 0, "active_shelf": self.active_shelf, "last_event": "Not started"}
+
+        self.cnc_existing_programs: List[Dict[str, Any]] = [
+            {"program_name": "O1200", "description": "Aksel O120 - existing CNC program"},
+            {"program_name": "O1201", "description": "Aksel O120 - revision B"},
+            {"program_name": "O2801", "description": "Flens O280"},
+            {"program_name": "O0802", "description": "Hylse O80"},
+            {"program_name": "O0803", "description": "Hylse O80 - revision B"},
+        ]
+        self.jobs: List[Dict[str, Any]] = []
 
         self.available_focas_functions, self.focas_function_params = self._load_focas_reference()
         self.available_leanlift_rest_commands, self.leanlift_command_params = self._load_hostweb_reference()
@@ -187,6 +209,8 @@ class ProductionCellService:
                         "status": "empty",
                         "part_type_id": "",
                         "part_no": None,
+                        "fifo_seq": None,
+                        "loaded_at": None,
                     }
                 )
                 slot_no += 1
@@ -196,7 +220,20 @@ class ProductionCellService:
         seed = [("1", "PT-RAW-120"), ("2", "PT-RAW-280"), ("3", "PT-INP-080")]
         for shelf, part_type_id in seed:
             for index, slot in enumerate(self.shelf_slots[shelf], start=1):
-                slot.update({"occupied": True, "status": "raw", "part_type_id": part_type_id, "part_no": index})
+                self._mark_slot_loaded(slot, part_type_id, index, "raw")
+
+    def _mark_slot_loaded(self, slot: Dict[str, Any], part_type_id: str, part_no: int | None, status: str = "raw") -> None:
+        self.inventory_sequence += 1
+        slot.update(
+            {
+                "occupied": True,
+                "status": self._status_alias(status),
+                "part_type_id": part_type_id,
+                "part_no": part_no,
+                "fifo_seq": self.inventory_sequence,
+                "loaded_at": self._now(),
+            }
+        )
 
     def _get_part_type(self, part_type_id: str) -> Dict[str, Any]:
         pt = next((p for p in self.part_types if p["part_type_id"] == part_type_id), None)
@@ -241,7 +278,54 @@ class ProductionCellService:
             for slot in self.shelf_slots[shelf]:
                 if slot["occupied"] and slot["part_type_id"] == part_type_id and self._status_alias(slot["status"]) in statuses:
                     out.append(slot)
-        return out
+        return sorted(out, key=lambda slot: (slot.get("fifo_seq") or 10**12, slot.get("slot_no") or 0))
+
+    def _inventory_candidates(self, part_type_id: str, statuses: set[str]) -> List[Dict[str, Any]]:
+        candidates: List[Dict[str, Any]] = []
+        for shelf in self.shelves:
+            for slot in self.shelf_slots[shelf]:
+                if slot["occupied"] and slot["part_type_id"] == part_type_id and self._status_alias(slot["status"]) in statuses:
+                    candidates.append({"shelf": shelf, "slot": slot})
+        return sorted(candidates, key=lambda item: (item["slot"].get("fifo_seq") or 10**12, int(item["shelf"]), item["slot"].get("slot_no") or 0))
+
+    def _slot_target(self, shelf: str, slot: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "shelf": shelf,
+            "slot_no": slot["slot_no"],
+            "x_mm": slot["x_mm"],
+            "y_mm": slot["y_mm"],
+            "z_mm": slot["z_mm"],
+            "part_type_id": slot.get("part_type_id", ""),
+            "part_no": slot.get("part_no"),
+            "fifo_seq": slot.get("fifo_seq"),
+        }
+
+    def _set_robot_target(self, target: Dict[str, Any] | None) -> None:
+        self.robot_status["next_pick"] = target
+        self.production_order["next_pick"] = target
+        if target:
+            self.robot_status["place_target"] = target
+            self.robot_status["active_task"] = f"Next pick shelf {target['shelf']} slot {target['slot_no']}"
+        else:
+            self.robot_status["active_task"] = "Idle"
+
+    def _prepare_next_pick(self) -> Dict[str, Any] | None:
+        part_type_id = self.production_order.get("part_type_id", "")
+        if not part_type_id:
+            self._set_robot_target(None)
+            return None
+        candidates = self._inventory_candidates(part_type_id, {"reserved", "raw"})
+        if not candidates:
+            self._set_robot_target(None)
+            return None
+        selected = candidates[0]
+        target = self._slot_target(selected["shelf"], selected["slot"])
+        self.active_shelf = selected["shelf"]
+        self.lift_status["current_shelf"] = selected["shelf"]
+        self.lift_status["access_point"] = 2
+        self.lift_status["tray_present"] = True
+        self._set_robot_target(target)
+        return target
 
     def _inventory_summary(self) -> Dict[str, Dict[str, int]]:
         summary: Dict[str, Dict[str, int]] = {}
@@ -298,6 +382,8 @@ class ProductionCellService:
                 "opcua": self.opcua_status,
                 "simulation": self.simulation,
                 "production_order": self.production_order,
+                "jobs": self.jobs,
+                "cnc_existing_programs": self.cnc_existing_programs,
                 "stats": self.get_stats(),
                 "inventory": self._inventory_summary(),
                 "history": self.history[:150],
@@ -329,7 +415,7 @@ class ProductionCellService:
             self._get_part_type(part_type_id)
             slots = self._generate_slots(cols, rows, z_mm)
             for index, slot in enumerate(slots, start=1):
-                slot.update({"occupied": True, "status": "raw", "part_type_id": part_type_id, "part_no": index})
+                self._mark_slot_loaded(slot, part_type_id, index, "raw")
             self.shelf_slots[shelf] = slots
             self._log("shelf", f"Configured shelf {shelf} with {len(slots)} production locations")
             return self.get_shelf_layout(shelf)
@@ -345,14 +431,15 @@ class ProductionCellService:
             normalized_status = self._status_alias(status)
             if occupied and part_type_id:
                 self._get_part_type(part_type_id)
-            slot.update(
-                {
-                    "occupied": occupied,
-                    "status": normalized_status if occupied else "empty",
-                    "part_type_id": part_type_id or "",
-                    "part_no": slot_no if occupied else None,
-                }
-            )
+            if occupied and not part_type_id:
+                raise ValueError("part_type_id is required when loading a slot")
+            if occupied:
+                if not slot.get("occupied") or slot.get("part_type_id") != part_type_id:
+                    self._mark_slot_loaded(slot, part_type_id or "", slot_no, normalized_status)
+                else:
+                    slot["status"] = normalized_status
+            else:
+                slot.update({"occupied": False, "status": "empty", "part_type_id": "", "part_no": None, "fifo_seq": None, "loaded_at": None})
             self._log("inventory", f"Manual {'load' if occupied else 'unload'} on shelf {shelf}, slot {slot_no}")
             return self._enrich_slot(slot)
 
@@ -381,6 +468,150 @@ class ProductionCellService:
                 self.part_types.append(record)
             self._log("parts", f"Saved part type {part_type_id}")
             return record
+
+    def _normalize_program_name(self, value: str) -> str:
+        raw = (value or "").strip().upper()
+        if not raw:
+            raise ValueError("NC program name is required")
+        if not re.match(r"^[A-Z0-9_.-]+$", raw):
+            raise ValueError("NC program name can only contain letters, numbers, dot, underscore and dash")
+        return raw
+
+    def _get_job(self, job_id: str) -> Dict[str, Any]:
+        job = next((item for item in self.jobs if item["job_id"] == job_id), None)
+        if not job:
+            raise ValueError(f"Unknown job_id: {job_id}")
+        return job
+
+    def _cnc_program_exists(self, program_name: str) -> bool:
+        return any(item["program_name"] == program_name for item in self.cnc_existing_programs)
+
+    def create_job(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        with self.lock:
+            job_name = (payload.get("job_name") or "").strip()
+            if not job_name:
+                raise ValueError("job_name is required")
+            part_type = self._get_part_type(payload.get("part_type_id", ""))
+            product = self._get_product(part_type["product_id"])
+            source_type = (payload.get("program_source_type") or "uploaded").strip().lower()
+            if source_type not in {"uploaded", "server_path", "cnc_existing"}:
+                raise ValueError("program_source_type must be uploaded, server_path or cnc_existing")
+
+            program_name = self._normalize_program_name(payload.get("program_name") or product.required_cnc_program)
+            source_path = (payload.get("source_path") or "").strip()
+            original_filename = (payload.get("original_filename") or "").strip()
+            display_name = original_filename or source_path or program_name
+
+            if source_type == "cnc_existing" and not self._cnc_program_exists(program_name):
+                raise ValueError(f"CNC program {program_name} is not registered as existing on the CNC")
+            if source_type in {"uploaded", "server_path"} and not source_path:
+                raise ValueError("source_path is required for uploaded/server_path programs")
+
+            self.job_sequence += 1
+            job = {
+                "job_id": f"JOB-{self.job_sequence:04d}",
+                "job_name": job_name,
+                "part_type_id": part_type["part_type_id"],
+                "part_name": part_type["name"],
+                "product_id": product.id,
+                "program_name": program_name,
+                "program_source_type": source_type,
+                "source_path": source_path,
+                "original_filename": original_filename,
+                "display_name": display_name,
+                "fifo_enabled": bool(payload.get("fifo_enabled", True)),
+                "created_at": self._now(),
+                "status": "ready",
+                "last_started_at": "",
+            }
+            self.jobs.append(job)
+            self._log("jobs", f"Created job {job['job_id']} for {part_type['part_type_id']} using {program_name}")
+            return job
+
+    def register_uploaded_nc_program(self, filename: str, stored_path: str, program_name: str | None = None) -> Dict[str, Any]:
+        with self.lock:
+            normalized = self._normalize_program_name(program_name or Path(filename).stem)
+            record = {
+                "program_name": normalized,
+                "program_source_type": "uploaded",
+                "source_path": stored_path,
+                "original_filename": filename,
+                "display_name": filename,
+                "registered_at": self._now(),
+            }
+            self._log("programs", f"Uploaded NC program {filename} as {normalized}")
+            return record
+
+    def _load_job_program_to_cnc(self, job: Dict[str, Any]) -> None:
+        self.cnc_status["selected_program"] = job["program_name"]
+        self.cnc_status["loaded_program"] = job["program_name"]
+        self.cnc_status["program_source"] = job["program_source_type"]
+        self.cnc_status["program_valid"] = True
+        if job["program_source_type"] == "cnc_existing":
+            self.cnc_status["program_transfer_state"] = "Using existing CNC program"
+        else:
+            self.cnc_status["program_transfer_state"] = f"Simulated transfer from {job['display_name']}"
+        self._diag("cnc", "tx", {"action": "load_nc_program", "job_id": job["job_id"], "program": job["program_name"], "source": job["program_source_type"], "path": job["source_path"]})
+        self._log("cnc", f"Loaded NC program {job['program_name']} for {job['job_id']}")
+
+    def start_job(self, job_id: str, mode: str = "quantity", quantity: int | None = None) -> Dict[str, Any]:
+        with self.lock:
+            job = self._get_job(job_id)
+            part_type = self._get_part_type(job["part_type_id"])
+            if not self.safety_status["safety_ok"]:
+                raise ValueError("Safety chain is not OK in simulation")
+            candidates = self._inventory_candidates(job["part_type_id"], {"raw"})
+            target = len(candidates) if mode == "all" else int(quantity or 0)
+            if target <= 0:
+                raise ValueError("Quantity must be greater than zero")
+            if len(candidates) < target:
+                raise ValueError(f"Not enough raw material. Requested {target}, available {len(candidates)}")
+
+            self._load_job_program_to_cnc(job)
+            ordered_candidates = candidates if job.get("fifo_enabled", True) else sorted(candidates, key=lambda item: (int(item["shelf"]), item["slot"].get("slot_no") or 0))
+            selected_candidates = ordered_candidates[:target]
+            for item in selected_candidates:
+                item["slot"]["status"] = "reserved"
+
+            first = selected_candidates[0]
+            first_target = self._slot_target(first["shelf"], first["slot"])
+            self.production_order = {
+                "active": True,
+                "job_id": job["job_id"],
+                "job_name": job["job_name"],
+                "part_type_id": part_type["part_type_id"],
+                "product_id": job["product_id"],
+                "target_qty": target,
+                "processed_qty": 0,
+                "mode": mode,
+                "selected_program": job["program_name"],
+                "program_source": job["program_source_type"],
+                "next_pick": first_target,
+                "state": "Queued",
+            }
+            job["status"] = "running"
+            job["last_started_at"] = self._now()
+            self._prepare_next_pick()
+            self.call_lift_rest("get_shelf", {"pm01_shelfNumber": first["shelf"]})
+            self._log("production", f"Started job {job['job_id']} with FIFO shelf {first['shelf']} slot {first['slot']['slot_no']}")
+            return self.production_order
+
+    def set_shelf_status(self, shelf: str, status: str, include_empty: bool = False) -> Dict[str, Any]:
+        with self.lock:
+            if shelf not in self.shelves:
+                raise ValueError("Unknown shelf")
+            normalized_status = self._status_alias(status)
+            changed = 0
+            for slot in self.shelf_slots[shelf]:
+                if not include_empty and not slot["occupied"]:
+                    continue
+                if normalized_status == "empty":
+                    slot.update({"occupied": False, "status": "empty", "part_type_id": "", "part_no": None, "fifo_seq": None, "loaded_at": None})
+                else:
+                    slot["status"] = normalized_status
+                changed += 1
+            self._log("inventory", f"Set {changed} locations on shelf {shelf} to {normalized_status}")
+            return {"shelf": shelf, "status": normalized_status, "changed": changed}
 
     def select_cnc_program(self, product_id: str, program: str, operator: str = "development") -> Dict[str, Any]:
         with self.lock:
@@ -414,25 +645,35 @@ class ProductionCellService:
                 slot["status"] = "reserved"
             self.production_order = {
                 "active": True,
+                "job_id": "",
+                "job_name": "Ad-hoc production",
                 "part_type_id": part_type_id,
                 "product_id": product.id,
                 "target_qty": target,
                 "processed_qty": 0,
                 "mode": mode,
                 "selected_program": selected_program,
+                "program_source": "manual_selection",
+                "next_pick": None,
                 "state": "Queued",
             }
+            self._prepare_next_pick()
             self._log("production", f"Started job {part_type_id}, qty={target}, program={selected_program}")
             return self.production_order
 
     def stop_production(self, reason: str = "Stopped from HMI") -> Dict[str, Any]:
         with self.lock:
+            job_id = self.production_order.get("job_id")
             self.production_order["active"] = False
             self.production_order["state"] = "Stopped"
             self.robot_status["busy"] = False
             self.cnc_status["cycle_running"] = False
             self.cnc_status["spindle_rpm"] = 0
             self.cnc_status["feed_rate"] = 0
+            if job_id:
+                job = next((item for item in self.jobs if item["job_id"] == job_id), None)
+                if job:
+                    job["status"] = "stopped"
             self._log("production", reason)
             return self.production_order
 
@@ -440,6 +681,7 @@ class ProductionCellService:
         if not self.production_order["active"]:
             return
         wip_slot = None
+        wip_shelf = ""
         for shelf in self.shelves:
             wip_slot = next(
                 (
@@ -450,15 +692,26 @@ class ProductionCellService:
                 None,
             )
             if wip_slot:
+                wip_shelf = shelf
                 break
         if wip_slot:
             wip_slot["status"] = "finished"
+            finished_target = self._slot_target(wip_shelf, wip_slot)
+            self.robot_status["place_target"] = finished_target
         self.production_order["processed_qty"] += 1
         self.cnc_status["part_counter"] += 1
         if self.production_order["processed_qty"] >= self.production_order["target_qty"]:
             self.production_order["active"] = False
             self.production_order["state"] = "Complete"
+            if self.production_order.get("job_id"):
+                job = next((item for item in self.jobs if item["job_id"] == self.production_order["job_id"]), None)
+                if job:
+                    job["status"] = "complete"
+                    job["completed_at"] = self._now()
+            self._set_robot_target(None)
             self._log("production", "Production job complete")
+        else:
+            self._prepare_next_pick()
 
     def call_cnc_focas(self, function_name: str, params: Dict[str, Any]) -> Dict[str, Any]:
         with self.lock:
@@ -589,7 +842,7 @@ class ProductionCellService:
             key_aliases = {
                 "safety": {"safetyok": "safety_ok", "emergencystopactive": "emergency_stop_active", "gatesclosed": "gates_closed", "scannerclear": "scanner_clear", "mode": "mode_key", "modekey": "mode_key"},
                 "robot": {"ready": "ready", "busy": "busy", "fault": "fault", "athome": "at_home", "partingripper": "part_in_gripper", "stationcomplete": "station_complete", "activetask": "active_task", "statusmessage": "status_message"},
-                "cnc": {"machineready": "machine_ready", "cyclerunning": "cycle_running", "cyclecomplete": "cycle_complete", "alarmactive": "alarm_active", "partpresent": "part_present", "selectedprogram": "selected_program", "statusmessage": "status_message"},
+                "cnc": {"machineready": "machine_ready", "cyclerunning": "cycle_running", "cyclecomplete": "cycle_complete", "alarmactive": "alarm_active", "partpresent": "part_present", "selectedprogram": "selected_program", "loadedprogram": "loaded_program", "programsource": "program_source", "programtransferstate": "program_transfer_state", "statusmessage": "status_message"},
                 "leanlift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
                 "lift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
             }

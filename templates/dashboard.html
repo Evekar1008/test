@@ -20,7 +20,10 @@
         <article class="card">
           <div class="section-title">
             <h1>Produksjon</h1>
-            <button id="stopProductionBtn" class="secondary">Stopp</button>
+            <div class="actions">
+              <a class="button-link secondary" href="/jobs">Jobber</a>
+              <button id="stopProductionBtn" class="secondary">Stopp</button>
+            </div>
           </div>
           <div class="form-grid">
             <label>Deltype<select id="prodPartType"></select></label>
@@ -28,7 +31,7 @@
             <label>Antall<input id="prodQty" type="number" value="2" min="1" /></label>
           </div>
           <div class="actions">
-            <button id="startProductionBtn">Start jobb</button>
+            <button id="startProductionBtn">Start ad-hoc</button>
             <button id="simStepBtn" class="secondary">Simuler steg</button>
             <button id="simStartBtn" class="secondary">Kjor simulering</button>
             <button id="simPauseBtn" class="secondary">Pause</button>

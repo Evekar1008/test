@@ -25,6 +25,52 @@ def test_start_production_quantity_and_complete():
     assert service.production_order["active"] is False
 
 
+def test_job_start_loads_uploaded_program_and_sets_fifo_robot_target():
+    service = ProductionCellService()
+    upload = service.register_uploaded_nc_program("O1200.NC", r"C:\NC\O1200.NC", "O1200")
+    job = service.create_job({"job_name": "Aksel serie 1", "part_type_id": "PT-RAW-120", "fifo_enabled": True, **upload})
+
+    order = service.start_job(job["job_id"], "quantity", 2)
+
+    assert order["job_id"] == job["job_id"]
+    assert service.cnc_status["loaded_program"] == "O1200"
+    assert service.cnc_status["program_source"] == "uploaded"
+    assert service.lift_status["current_shelf"] == "1"
+    assert service.robot_status["next_pick"]["shelf"] == "1"
+    assert service.robot_status["next_pick"]["slot_no"] == 1
+    assert service.robot_status["place_target"] == service.robot_status["next_pick"]
+    assert service.shelf_slots["1"][0]["status"] == "reserved"
+    assert service.shelf_slots["1"][1]["status"] == "reserved"
+
+
+def test_job_can_use_existing_cnc_program():
+    service = ProductionCellService()
+    job = service.create_job(
+        {
+            "job_name": "CNC eksisterende",
+            "part_type_id": "PT-RAW-120",
+            "program_source_type": "cnc_existing",
+            "program_name": "O1201",
+        }
+    )
+
+    order = service.start_job(job["job_id"], "quantity", 1)
+
+    assert order["selected_program"] == "O1201"
+    assert service.cnc_status["program_transfer_state"] == "Using existing CNC program"
+
+
+def test_set_shelf_status_changes_all_occupied_locations_only():
+    service = ProductionCellService()
+    service.update_slot("1", 1, False, "empty", "")
+
+    result = service.set_shelf_status("1", "quarantine")
+
+    assert result["changed"] == 11
+    assert service.shelf_slots["1"][0]["status"] == "empty"
+    assert all(slot["status"] == "quarantine" for slot in service.shelf_slots["1"][1:])
+
+
 def test_graphic_layout_and_manual_load_unload():
     service = ProductionCellService()
     layout = service.configure_shelf_layout_graphic("5", "PT-RAW-120", 2, 2, 95)

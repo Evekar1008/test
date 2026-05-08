@@ -4,7 +4,7 @@ const SIGNAL_KEYS = {
   safety: ['EmergencyStopActive', 'GatesClosed', 'ScannerClear', 'Mode'],
   leanlift: ['CurrentShelf', 'AccessPoint', 'TrayPresent', 'TrayExtended', 'DoorClosed', 'AlarmActive', 'StatusMessage'],
   robot: ['Ready', 'Busy', 'Fault', 'AtHome', 'PartInGripper', 'StationComplete', 'ActiveTask', 'StatusMessage'],
-  cnc: ['MachineReady', 'CycleRunning', 'CycleComplete', 'AlarmActive', 'PartPresent', 'SelectedProgram', 'StatusMessage'],
+  cnc: ['MachineReady', 'CycleRunning', 'CycleComplete', 'AlarmActive', 'PartPresent', 'SelectedProgram', 'LoadedProgram', 'ProgramSource', 'ProgramTransferState', 'StatusMessage'],
 };
 
 async function getState() {
@@ -17,6 +17,16 @@ async function postJson(url, payload = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+async function postForm(url, formData) {
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Request failed');
@@ -48,6 +58,11 @@ function renderKv(id, obj, keys) {
   });
 }
 
+function formatTarget(target) {
+  if (!target) return '-';
+  return `Hylle ${target.shelf}, slot ${target.slot_no}, X ${target.x_mm}, Y ${target.y_mm}, Z ${target.z_mm}`;
+}
+
 function renderStatusBadges(state) {
   const safety = state.safety?.safety_ok ? 'OK' : 'TRIP';
   if ($('safetyBadge')) {
@@ -63,10 +78,34 @@ function renderStatusBadges(state) {
 }
 
 function renderMachineStatus(state) {
+  const robotView = {
+    ...state.robot,
+    next_pick: formatTarget(state.robot?.next_pick),
+    place_target: formatTarget(state.robot?.place_target),
+  };
   renderKv('liftStatus', state.lift, ['connection', 'current_shelf', 'access_point', 'tray_present', 'tray_extended', 'door_closed', 'alarm_active', 'status_message']);
-  renderKv('robotStatus', state.robot, ['connection', 'ready', 'busy', 'fault', 'at_home', 'part_in_gripper', 'station_complete', 'active_task', 'status_message']);
-  renderKv('cncStatus', state.cnc, ['connection', 'machine_state', 'selected_program', 'program_valid', 'machine_ready', 'cycle_running', 'cycle_complete', 'alarm_active', 'part_present', 'part_counter']);
+  renderKv('robotStatus', robotView, ['connection', 'ready', 'busy', 'fault', 'at_home', 'part_in_gripper', 'station_complete', 'active_task', 'next_pick', 'place_target', 'status_message']);
+  renderKv('cncStatus', state.cnc, ['connection', 'machine_state', 'selected_program', 'loaded_program', 'program_source', 'program_transfer_state', 'program_valid', 'machine_ready', 'cycle_running', 'cycle_complete', 'alarm_active', 'part_present', 'part_counter']);
   renderKv('safetyStatus', state.safety, ['safety_ok', 'emergency_stop_active', 'gates_closed', 'scanner_clear', 'mode_key', 'last_trip']);
+}
+
+function renderJobMachineStatus(state) {
+  renderKv('jobMachineStatus', {
+    cnc_loaded_program: state.cnc?.loaded_program,
+    program_source: state.cnc?.program_source,
+    transfer: state.cnc?.program_transfer_state,
+    lift_shelf: state.lift?.current_shelf,
+    robot_task: state.robot?.active_task,
+    next_pick: formatTarget(state.robot?.next_pick),
+    finished_place: formatTarget(state.robot?.place_target),
+  });
+}
+
+function renderProductionStatus(order) {
+  renderKv('productionStatus', {
+    ...order,
+    next_pick: formatTarget(order?.next_pick),
+  });
 }
 
 function renderEvents(state, targetId = 'eventTable', limit = 8) {
@@ -228,7 +267,7 @@ function setupProductionControls(state) {
         mode: $('prodMode').value,
         quantity: Number($('prodQty').value),
       });
-      renderKv('productionStatus', result);
+      renderProductionStatus(result);
       await refreshCurrentPage();
     } catch (error) {
       alert(error.message);
@@ -252,10 +291,131 @@ function setupProductionControls(state) {
   });
 }
 
+function defaultProgramForPart(state, partTypeId) {
+  const part = state.part_types.find((item) => item.part_type_id === partTypeId) || state.part_types[0];
+  const product = productForId(state, part?.product_id);
+  return product?.required_cnc_program || state.cnc?.selected_program || '';
+}
+
+function syncJobProgramFields(state) {
+  const source = $('jobProgramSource')?.value || 'uploaded';
+  ['jobUploadFields', 'jobPathFields', 'jobCncFields'].forEach((id) => $(id)?.classList.add('hidden'));
+  if (source === 'uploaded') $('jobUploadFields')?.classList.remove('hidden');
+  if (source === 'server_path') $('jobPathFields')?.classList.remove('hidden');
+  if (source === 'cnc_existing') {
+    $('jobCncFields')?.classList.remove('hidden');
+    if ($('jobCncProgram')) $('jobProgramName').value = $('jobCncProgram').value || defaultProgramForPart(state, $('jobPartType')?.value);
+  }
+}
+
+function renderJobs(state, selectedJobId) {
+  const selected = selectedJobId || $('startJobSelect')?.value;
+  fillSelect('startJobSelect', state.jobs || [], (job) => job.job_id, (job) => `${job.job_id} - ${job.job_name}`, selected);
+  const body = $('jobsTable');
+  if (body) {
+    body.innerHTML = '';
+    (state.jobs || []).forEach((job) => {
+      const tr = document.createElement('tr');
+      tr.append(
+        makeCell(`${job.job_id} ${job.job_name}`),
+        makeCell(`${job.part_type_id} ${job.part_name || ''}`),
+        makeCell(job.program_name),
+        makeCell(job.display_name || job.program_source_type),
+        makeCell(job.fifo_enabled ? 'Ja' : 'Nei'),
+        makeCell(job.status),
+      );
+      body.appendChild(tr);
+    });
+  }
+}
+
+async function initJobs() {
+  const state = await getState();
+  fillSelect('jobPartType', state.part_types, (p) => p.part_type_id, (p) => `${p.part_type_id} - ${p.name}`);
+  fillSelect('jobCncProgram', state.cnc_existing_programs || [], (p) => p.program_name, (p) => `${p.program_name} - ${p.description}`);
+  fillSelect('jobShelfSelect', state.shelves, (s) => s, (s) => `Hylle ${s}`, state.active_shelf);
+  if ($('jobProgramName')) $('jobProgramName').value = defaultProgramForPart(state, $('jobPartType')?.value);
+  syncJobProgramFields(state);
+  renderJobs(state);
+  renderProductionStatus(state.production_order);
+  renderJobMachineStatus(state);
+  await loadShelfLayout(state.active_shelf);
+
+  on('jobPartType', 'change', () => {
+    if ($('jobProgramName')) $('jobProgramName').value = defaultProgramForPart(state, $('jobPartType').value);
+  });
+  on('jobProgramSource', 'change', () => syncJobProgramFields(state));
+  on('jobCncProgram', 'change', () => {
+    if ($('jobProgramName')) $('jobProgramName').value = $('jobCncProgram').value;
+  });
+  on('jobShelfSelect', 'change', async () => loadShelfLayout($('jobShelfSelect').value));
+
+  on('createJobBtn', 'click', async () => {
+    try {
+      const source = $('jobProgramSource').value;
+      let program = {
+        program_source_type: source,
+        program_name: $('jobProgramName').value,
+        source_path: $('jobProgramPath')?.value || '',
+        original_filename: '',
+      };
+
+      if (source === 'uploaded') {
+        const file = $('jobProgramFile')?.files?.[0];
+        if (!file) throw new Error('Velg en NC-fil for opplasting');
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('program_name', $('jobProgramName').value);
+        const upload = await postForm('/api/nc-programs/upload', formData);
+        program = upload;
+      } else if (source === 'cnc_existing') {
+        program.program_name = $('jobCncProgram').value;
+        program.source_path = '';
+        program.original_filename = '';
+      }
+
+      const job = await postJson('/api/jobs', {
+        job_name: $('jobName').value,
+        part_type_id: $('jobPartType').value,
+        fifo_enabled: $('jobFifo').checked,
+        ...program,
+      });
+      renderKv('jobCreateStatus', job);
+      const fresh = await getState();
+      renderJobs(fresh, job.job_id);
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  on('startJobBtn', 'click', async () => {
+    try {
+      const jobId = $('startJobSelect').value;
+      if (!jobId) throw new Error('Opprett eller velg en jobb forst');
+      const order = await postJson(`/api/jobs/${encodeURIComponent(jobId)}/start`, {
+        mode: $('jobStartMode').value,
+        quantity: Number($('jobStartQty').value),
+      });
+      renderProductionStatus(order);
+      await refreshCurrentPage();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('stopProductionBtn', 'click', async () => {
+    await postJson('/api/production/stop', { reason: 'Stopped from jobs page' });
+    await refreshCurrentPage();
+  });
+  on('simStepBtn', 'click', async () => {
+    await postJson('/api/simulation/step');
+    await refreshCurrentPage();
+  });
+}
+
 function renderDashboardState(state) {
   renderStatusBadges(state);
   renderMachineStatus(state);
-  renderKv('productionStatus', state.production_order);
+  renderProductionStatus(state.production_order);
   renderEvents(state);
 }
 
@@ -339,6 +499,19 @@ async function initShelves() {
       part_type_id: '',
     });
     await loadShelfLayout($('shelfSelect').value);
+  });
+  on('bulkStatusBtn', 'click', async () => {
+    try {
+      const result = await postJson('/api/shelf/status-bulk', {
+        shelf: $('shelfSelect').value,
+        status: $('bulkStatus').value,
+        include_empty: Boolean($('bulkIncludeEmpty')?.checked),
+      });
+      renderKv('shelfResult', result);
+      await loadShelfLayout($('shelfSelect').value);
+    } catch (error) {
+      alert(error.message);
+    }
   });
 }
 
@@ -500,7 +673,7 @@ async function initOpcua() {
 async function initStats() {
   const state = await getState();
   renderKv('statsList', state.stats);
-  renderKv('productionStatus', state.production_order);
+  renderProductionStatus(state.production_order);
   renderEvents(state, 'historyTable', 150);
 }
 
@@ -540,6 +713,13 @@ async function refreshCurrentPage() {
   if (page === 'parts') {
     renderInventory(state);
   }
+  if (page === 'jobs') {
+    renderJobs(state);
+    renderProductionStatus(state.production_order);
+    renderJobMachineStatus(state);
+    if ($('jobShelfSelect')) $('jobShelfSelect').value = state.active_shelf;
+    await loadShelfLayout(state.active_shelf);
+  }
   if (page === 'cnc' || page === 'lift') {
     renderMachineStatus(state);
   }
@@ -550,13 +730,14 @@ async function refreshCurrentPage() {
   if (page === 'dashboard') await initDashboard();
   if (page === 'shelves') await initShelves();
   if (page === 'parts') await initParts();
+  if (page === 'jobs') await initJobs();
   if (page === 'cnc') await initCnc();
   if (page === 'lift') await initLift();
   if (page === 'opcua') await initOpcua();
   if (page === 'stats') await initStats();
   if (page === 'diagnostics') await initDiagnostics();
 
-  if (page === 'dashboard' || page === 'opcua') {
+  if (page === 'dashboard' || page === 'opcua' || page === 'jobs') {
     setInterval(refreshCurrentPage, 2500);
   }
 })().catch((error) => {

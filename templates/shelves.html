@@ -52,6 +52,14 @@
             <button id="manualLoadBtn">Sett inn</button>
             <button id="manualUnloadBtn" class="secondary">Ta ut</button>
           </div>
+          <h2>Sett hele hyllen</h2>
+          <div class="form-grid">
+            <label>Status<select id="bulkStatus"><option value="raw">raw</option><option value="reserved">reserved</option><option value="wip">wip</option><option value="finished">finished</option><option value="quarantine">quarantine</option><option value="blocked">blocked</option><option value="empty">empty</option></select></label>
+          </div>
+          <label class="checkbox-line"><input id="bulkIncludeEmpty" type="checkbox" /> Ta med tomme lokasjoner</label>
+          <div class="actions">
+            <button id="bulkStatusBtn" class="secondary">Sett status</button>
+          </div>
         </article>
 
         <article class="card">

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jobber</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="jobs">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <div class="section-title">
+            <h1>Definer jobb</h1>
+          </div>
+          <div class="form-grid">
+            <label>Jobbnavn<input id="jobName" placeholder="Aksel O120 - serie 1" /></label>
+            <label>Del<select id="jobPartType"></select></label>
+            <label>NC kilde<select id="jobProgramSource"><option value="uploaded">Last opp fil</option><option value="server_path">Mappe / nettverk</option><option value="cnc_existing">Ligger paa CNC</option></select></label>
+            <label>Programnavn<input id="jobProgramName" placeholder="O1200" /></label>
+          </div>
+
+          <div id="jobUploadFields" class="form-grid">
+            <label>NC-fil<input id="jobProgramFile" type="file" /></label>
+          </div>
+          <div id="jobPathFields" class="form-grid hidden">
+            <label>Filsti<input id="jobProgramPath" placeholder="D:\\NC\\O1200.NC eller \\\\server\\nc\\O1200.NC" /></label>
+          </div>
+          <div id="jobCncFields" class="form-grid hidden">
+            <label>Eksisterende CNC-program<select id="jobCncProgram"></select></label>
+          </div>
+
+          <label class="checkbox-line"><input id="jobFifo" type="checkbox" checked /> Bruk FIFO ved valg av emner</label>
+          <div class="actions">
+            <button id="createJobBtn">Lagre jobb</button>
+          </div>
+          <dl id="jobCreateStatus" class="kv"></dl>
+        </article>
+
+        <article class="card">
+          <div class="section-title">
+            <h2>Start jobb</h2>
+            <button id="stopProductionBtn" class="secondary">Stopp</button>
+          </div>
+          <div class="form-grid">
+            <label>Jobb<select id="startJobSelect"></select></label>
+            <label>Modus<select id="jobStartMode"><option value="quantity">Antall</option><option value="all">Alle raemner</option></select></label>
+            <label>Antall<input id="jobStartQty" type="number" value="1" min="1" /></label>
+          </div>
+          <div class="actions">
+            <button id="startJobBtn">Start valgt jobb</button>
+            <button id="simStepBtn" class="secondary">Simuler steg</button>
+          </div>
+          <dl id="productionStatus" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="layout-2">
+        <article class="card">
+          <h2>Jobbliste</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Jobb</th><th>Del</th><th>Program</th><th>Kilde</th><th>FIFO</th><th>Status</th></tr></thead>
+              <tbody id="jobsTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Robot og CNC</h2>
+          <dl id="jobMachineStatus" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="layout-2 wide-left">
+        <article class="card">
+          <div class="section-title">
+            <h2>Aktiv hylle</h2>
+            <select id="jobShelfSelect"></select>
+          </div>
+          <svg id="shelfSvg" viewBox="0 0 1000 450" role="img"></svg>
+          <div id="shelfInfo" class="muted"></div>
+        </article>
+
+        <article class="card">
+          <h2>Koordinater</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Deltype</th><th>Status</th><th>Dia</th><th>X</th><th>Y</th><th>Z</th></tr></thead>
+              <tbody id="coordsTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

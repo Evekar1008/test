@@ -78,6 +78,7 @@ class OpcUaSimulator:
                 "Cell/Mode": "Automatic",
                 "Cell/Command": "",
                 "Cell/Message": "",
+                "Cell/ActiveJob": "",
                 "Cell/LastEvent": "",
                 "Safety/SafetyOk": True,
                 "Safety/EmergencyStopActive": False,
@@ -98,6 +99,8 @@ class OpcUaSimulator:
                 "Robot/PartInGripper": False,
                 "Robot/StationComplete": False,
                 "Robot/ActiveTask": "Idle",
+                "Robot/NextPick": "",
+                "Robot/PlaceTarget": "",
                 "Robot/StatusMessage": "Ready",
                 "CNC/MachineReady": True,
                 "CNC/CycleRunning": False,
@@ -105,6 +108,9 @@ class OpcUaSimulator:
                 "CNC/AlarmActive": False,
                 "CNC/PartPresent": False,
                 "CNC/SelectedProgram": "O1200",
+                "CNC/LoadedProgram": "O1200",
+                "CNC/ProgramSource": "cnc_existing",
+                "CNC/ProgramTransferState": "Idle",
                 "CNC/StatusMessage": "Ready",
             }
 
@@ -172,12 +178,18 @@ class OpcUaSimulator:
             return
         self.service.update_machine_signals("opcua", {target_group: {key: value}})
 
+    def _format_target(self, target: Dict[str, Any] | None) -> str:
+        if not target:
+            return ""
+        return f"shelf={target.get('shelf')} slot={target.get('slot_no')} x={target.get('x_mm')} y={target.get('y_mm')} z={target.get('z_mm')}"
+
     def _push_state(self) -> None:
         state = self.service.get_state()
         latest_event = state["history"][0]["message"] if state["history"] else ""
         values = {
             "Cell/Heartbeat": int(time.time()),
             "Cell/Mode": state["safety"]["mode_key"],
+            "Cell/ActiveJob": state["production_order"].get("job_id", ""),
             "Cell/LastEvent": latest_event,
             "Safety/SafetyOk": state["safety"]["safety_ok"],
             "Safety/EmergencyStopActive": state["safety"]["emergency_stop_active"],
@@ -198,6 +210,8 @@ class OpcUaSimulator:
             "Robot/PartInGripper": state["robot"]["part_in_gripper"],
             "Robot/StationComplete": state["robot"]["station_complete"],
             "Robot/ActiveTask": state["robot"]["active_task"],
+            "Robot/NextPick": self._format_target(state["robot"].get("next_pick")),
+            "Robot/PlaceTarget": self._format_target(state["robot"].get("place_target")),
             "Robot/StatusMessage": state["robot"]["status_message"],
             "CNC/MachineReady": state["cnc"]["machine_ready"],
             "CNC/CycleRunning": state["cnc"]["cycle_running"],
@@ -205,6 +219,9 @@ class OpcUaSimulator:
             "CNC/AlarmActive": state["cnc"]["alarm_active"],
             "CNC/PartPresent": state["cnc"]["part_present"],
             "CNC/SelectedProgram": state["cnc"]["selected_program"],
+            "CNC/LoadedProgram": state["cnc"]["loaded_program"],
+            "CNC/ProgramSource": state["cnc"]["program_source"],
+            "CNC/ProgramTransferState": state["cnc"]["program_transfer_state"],
             "CNC/StatusMessage": state["cnc"]["status_message"],
         }
         for path, value in values.items():

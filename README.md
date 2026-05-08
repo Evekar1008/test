@@ -6,6 +6,7 @@ Flask-basert utviklingsversjon for produksjonscelle med Haenel LeanLift, Gudel/A
 - `/` Dashboard: produksjonsordre, programvalg, maskinstatus, safety-status, aktivt hyllekart og hurtigsignaler.
 - `/shelves`: hyllekart i skala, definerbare hyllemaal, grafisk produksjonslayout og manuell inn/utlasting.
 - `/parts`: deltyper og inventaroversikt.
+- `/jobs`: jobbdefinisjon med deltype, NC-program fra opplasting/mappe/CNC, FIFO-start og robotkoordinater.
 - `/cnc`: CNC-status, whitelisted programvalg per produkt og simulerte FOCAS-kall.
 - `/lift`: LeanLift-status, hurtigvalg for hylle/uttak og Host-Web-kommandoer fra referansefil.
 - `/opcua`: OPC UA-simulatorstatus og webbasert signaltest.
@@ -20,11 +21,11 @@ Serveren startes sammen med `python app.py` dersom pakken `opcua` er installert.
 - Toppnode: `Objects/ProductionCell`
 
 UAExpert kan skrive til noder under:
-- `Cell`: `Mode`, `Command`, `Message`
+- `Cell`: `Mode`, `Command`, `Message`, `ActiveJob`, `LastEvent`
 - `Safety`: `EmergencyStopActive`, `GatesClosed`, `ScannerClear`
 - `LeanLift`: `CurrentShelf`, `AccessPoint`, `TrayPresent`, `TrayExtended`, `DoorClosed`, `AlarmActive`, `StatusMessage`
-- `Robot`: `Ready`, `Busy`, `Fault`, `AtHome`, `PartInGripper`, `StationComplete`, `ActiveTask`, `StatusMessage`
-- `CNC`: `MachineReady`, `CycleRunning`, `CycleComplete`, `AlarmActive`, `PartPresent`, `SelectedProgram`, `StatusMessage`
+- `Robot`: `Ready`, `Busy`, `Fault`, `AtHome`, `PartInGripper`, `StationComplete`, `ActiveTask`, `NextPick`, `PlaceTarget`, `StatusMessage`
+- `CNC`: `MachineReady`, `CycleRunning`, `CycleComplete`, `AlarmActive`, `PartPresent`, `SelectedProgram`, `LoadedProgram`, `ProgramSource`, `ProgramTransferState`, `StatusMessage`
 - `Cell/Command`: kommandoer som `GET_SHELF 7`, `TRAY_EXTEND`, `TRAY_HOME`, `CNC_START`, `CNC_COMPLETE`, `SAFETY_TRIP`, `SAFETY_OK`, `ROBOT_FAULT`, `RESET_ALARMS`, `MODE AUTO`, `MODE SETUP`, `MODE SERVICE`
 
 ## API (utdrag)
@@ -32,7 +33,11 @@ UAExpert kan skrive til noder under:
 - `GET /api/leanlift/shelf-layout/<shelf>`
 - `POST /api/shelf/configure-graphic`
 - `POST /api/shelf/slot/update`
+- `POST /api/shelf/status-bulk`
 - `POST /api/parts`
+- `POST /api/nc-programs/upload`
+- `POST /api/jobs`
+- `POST /api/jobs/<job_id>/start`
 - `POST /api/production/start`
 - `POST /api/production/stop`
 - `POST /api/cnc/program/select`
@@ -46,6 +51,8 @@ UAExpert kan skrive til noder under:
 ## Status mot Functional Description
 - Host-Web/WSDL-operasjoner lastes fra `doc/hostweb_reference.json` og speiler `doc/macro.wsdl`.
 - FOCAS-funksjoner lastes fra `focas/focas_reference.json`.
+- Jobbsiden kan knytte en definert del til NC-program fra opplasting, nettverkssti eller program som allerede ligger paa CNC.
+- Jobbstart simulerer NC-overfoering/valg i CNC, reserverer raemner FIFO, henter foerste aktuelle hylle og gir roboten neste plukk-/plasskoordinat.
 - Produksjonsstart validerer valgt CNC-program mot produktets whitelist og sjekker tilgjengelige raemner i inventar.
 - Safety og maskinhandshakes er simulert via HMI/API/OPC UA. Raspberry Pi/webappen er ikke en safety-controller.
 - Data ligger fortsatt i minne. Database, innlogging/roller, ekte SOAP/FOCAS/ABB RWS og endelig safety/integrasjonslogikk gjenstaar.

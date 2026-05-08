@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from flask import Flask, jsonify, render_template, request
+from werkzeug.utils import secure_filename
 
 from cell_service import ProductionCellService
 from opcua_server import OpcUaSimulator
@@ -24,6 +27,11 @@ def shelves_page():
 @app.get("/parts")
 def parts_page():
     return render_template("parts.html")
+
+
+@app.get("/jobs")
+def jobs_page():
+    return render_template("jobs.html")
 
 
 @app.get("/cnc")
@@ -111,10 +119,59 @@ def api_slot_update():
         return jsonify({"error": str(exc)}), 400
 
 
+@app.post("/api/shelf/status-bulk")
+def api_shelf_status_bulk():
+    payload = request.get_json(force=True)
+    try:
+        return jsonify(
+            service.set_shelf_status(
+                str(payload.get("shelf", "")),
+                payload.get("status", "raw"),
+                bool(payload.get("include_empty", False)),
+            )
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 @app.post("/api/parts")
 def api_parts():
     try:
         return jsonify(service.upsert_part_type(request.get_json(force=True)))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.post("/api/nc-programs/upload")
+def api_nc_program_upload():
+    uploaded_file = request.files.get("file")
+    if not uploaded_file or not uploaded_file.filename:
+        return jsonify({"error": "NC program file is required"}), 400
+    safe_name = secure_filename(uploaded_file.filename)
+    if not safe_name:
+        return jsonify({"error": "Invalid filename"}), 400
+    service.upload_dir.mkdir(parents=True, exist_ok=True)
+    stored_path = service.upload_dir / f"{uuid4().hex}_{safe_name}"
+    uploaded_file.save(stored_path)
+    try:
+        return jsonify(service.register_uploaded_nc_program(uploaded_file.filename, str(stored_path), request.form.get("program_name")))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.post("/api/jobs")
+def api_jobs_create():
+    try:
+        return jsonify(service.create_job(request.get_json(force=True)))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.post("/api/jobs/<job_id>/start")
+def api_jobs_start(job_id: str):
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(service.start_job(job_id, payload.get("mode", "quantity"), payload.get("quantity")))
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 

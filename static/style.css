@@ -172,6 +172,21 @@ textarea {
   font: inherit;
 }
 
+input[type="checkbox"] {
+  width: auto;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.checkbox-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.35rem 0 0.85rem;
+}
+
 button {
   border: 0;
   border-radius: 6px;
@@ -183,7 +198,23 @@ button {
   font-weight: 650;
 }
 
+a.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #ffffff;
+  padding: 0.58rem 0.8rem;
+  text-decoration: none;
+  font-weight: 650;
+}
+
 button:hover {
+  background: var(--primary-dark);
+}
+
+a.button-link:hover {
   background: var(--primary-dark);
 }
 
@@ -192,8 +223,14 @@ button.secondary {
   color: #172033;
 }
 
-button.secondary:hover {
+button.secondary:hover,
+a.button-link.secondary:hover {
   background: #cbd5e1;
+}
+
+a.button-link.secondary {
+  background: var(--secondary);
+  color: #172033;
 }
 
 button.danger {
