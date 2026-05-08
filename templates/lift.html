@@ -1,4 +1,42 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>LeanLift REST</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="lift">{% include '_nav.html' %}
-<main><section class="card"><h2>Heis status</h2><ul id="liftStatus"></ul></section><section class="card"><h2>REST-kommandoer (simulert, navngitt etter manual)</h2><div class="row"><select id="liftFunction"></select></div><div id="liftFields" class="row"></div><button id="runLiftBtn">Kjør kommando</button><pre id="liftResponse"></pre></section></main>
-<script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeanLift</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="lift">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <h1>LeanLift</h1>
+          <dl id="liftStatus" class="kv"></dl>
+        </article>
+        <article class="card">
+          <h2>Hylleflyt</h2>
+          <div class="form-grid">
+            <label>Hylle<input id="quickShelfNo" type="number" value="1" min="1" /></label>
+            <label>Uttak<select id="quickAccessPoint"><option value="2">Intern automasjon</option><option value="1">Ekstern operator</option></select></label>
+          </div>
+          <div class="actions">
+            <button id="quickGetShelfBtn">Hent hylle</button>
+            <button id="quickTransferBtn" class="secondary">Send til uttak</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Host-Web</h2>
+          <select id="liftFunction"></select>
+        </div>
+        <div id="liftFields" class="form-grid"></div>
+        <button id="runLiftBtn">Kjor kommando</button>
+        <pre id="liftResponse"></pre>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,144 @@
+{
+  "operations": [
+    "base_services",
+    "base_servicesV02",
+    "get_shelf",
+    "getShelfV02",
+    "read_status",
+    "readStatusV02",
+    "confirmV01",
+    "store_shelf",
+    "add_shelf",
+    "remove_shelf",
+    "optimisation_run",
+    "delete_comp_disp",
+    "set_interface",
+    "read_st_mp_mod",
+    "read_st_lft_feat",
+    "readStLftFeatV02",
+    "close_door",
+    "set_signal",
+    "conf_req_ledge",
+    "confReqLedgeV02",
+    "pre_pos_mode",
+    "read_st_height",
+    "edit_shelf_prop",
+    "read_st_speed",
+    "get_shelf_backgr",
+    "set_start_url",
+    "shelf_transfer"
+  ],
+  "params": {
+    "base_services": [
+      "pm01_addShelf",
+      "pm02_removeShelf",
+      "pm03_getShelf",
+      "pm04_storeShelf",
+      "pm05_startOptimisationRun",
+      "pm06_releaseShelfLocking",
+      "pm11_manualShelfPositioningByNumber",
+      "pm12_manualShelfSelectionBySight",
+      "pm21_infoServices",
+      "pm22_systemServices",
+      "pm23_slidingDoor"
+    ],
+    "base_servicesV02": [
+      "pm01_addShelf",
+      "pm02_removeShelf",
+      "pm03_getShelf",
+      "pm04_storeShelf",
+      "pm05_startOptimisationRun",
+      "pm06_releaseShelfLocking",
+      "pm11_manualShelfPositioningByNumber",
+      "pm12_manualShelfSelectionBySight",
+      "pm22_systemServices",
+      "pm23_slidingDoor",
+      "pm24_shelfTransfer",
+      "pm25_runStorageLocation"
+    ],
+    "get_shelf": [
+      "pm01_shelfNumber",
+      "pm02_compartmentNumber",
+      "pm03_compartmentDepthNumber",
+      "pm04_containerWidthInCompartment",
+      "pm05_containerWidthInCompartmentDepth",
+      "pm10_compartmentNumberPickOLight",
+      "pm11_compartmentDepthNumberPickOLight",
+      "pm12_compartmentMMPickOLight",
+      "pm13_compartmentDepthMMPickOLight",
+      "pm15_shelfLocking",
+      "pm16_doorHeight"
+    ],
+    "getShelfV02": [
+      "pm01_shelfNumber",
+      "pm02_compartmentNumber",
+      "pm03_compartmentDepthNumber",
+      "pm04_containerWidthInCompartment",
+      "pm05_containerWidthInCompartmentDepth",
+      "pm10_compartmentNumberPickOLight",
+      "pm11_compartmentDepthNumberPickOLight",
+      "pm12_compartmentMMPickOLight",
+      "pm13_compartmentDepthMMPickOLight",
+      "pm15_shelfLocking",
+      "pm16_doorHeight"
+    ],
+    "read_status": [],
+    "readStatusV02": [],
+    "confirmV01": [],
+    "store_shelf": [],
+    "add_shelf": [
+      "pm01_shelfNumber",
+      "pm02_shelfHeight",
+      "pm03_shelfSpeed"
+    ],
+    "remove_shelf": [
+      "pm01_shelfNumber"
+    ],
+    "optimisation_run": [
+      "pm01_optimisationType"
+    ],
+    "delete_comp_disp": [],
+    "set_interface": [
+      "pm01_device"
+    ],
+    "read_st_mp_mod": [],
+    "read_st_lft_feat": [],
+    "readStLftFeatV02": [],
+    "close_door": [],
+    "set_signal": [
+      "pm01_signal1",
+      "pm02_signal2",
+      "pm03_signal3"
+    ],
+    "conf_req_ledge": [
+      "pm01_confirmModuleNumber",
+      "pm05_quantity"
+    ],
+    "confReqLedgeV02": [
+      "pm01_confirmModuleNumber",
+      "pm05_quantity",
+      "pm06_onlyText"
+    ],
+    "pre_pos_mode": [
+      "pm01_prePosMode"
+    ],
+    "read_st_height": [
+      "pm01_stringNumber",
+      "pm02_typeOfHeight"
+    ],
+    "edit_shelf_prop": [
+      "pm01_shelfNumber",
+      "pm02_shelfTargetHeight"
+    ],
+    "read_st_speed": [
+      "pm01_stringNumber"
+    ],
+    "get_shelf_backgr": [
+      "pm01_shelfNumber"
+    ],
+    "set_start_url": [],
+    "shelf_transfer": [
+      "pm01_destinationAccessNumber"
+    ]
+  }
+}
