@@ -1,11 +1,70 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Hyllekonfig</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="shelves">{% include '_nav.html' %}
-<main>
-<section class="card"><h2>Velg hylle (en om gangen)</h2><div class="row"><select id="shelfSelect"></select><button id="loadShelfBtn">Last hylle</button></div></section>
-<section class="card"><h2>Grafisk layoutgenerator</h2>
-<div class="row"><label>Deltype</label><select id="layoutPartType"></select><label>Kolonner</label><input id="layoutCols" type="number" value="4"/><label>Rader</label><input id="layoutRows" type="number" value="3"/><label>Z</label><input id="layoutZ" type="number" value="95"/></div>
-<button id="generateLayoutBtn">Generer layout grafisk</button><ul id="shelfResult"></ul>
-</section>
-<section class="card"><h2>Hyllekart</h2><svg id="shelfSvg" viewBox="0 0 1000 450"></svg><p id="shelfInfo"></p></section>
-<section class="card"><h2>Manuell inn/utlasting</h2><div class="row"><label>Slot #</label><input id="manualSlotNo" type="number" value="1"/><label>Status</label><select id="manualStatus"><option value="empty">empty</option><option value="raw">raw</option><option value="in_process">in_process</option><option value="finished">finished</option><option value="blocked">blocked</option></select><label>Deltype</label><select id="manualPartType"></select></div><div class="row"><button id="manualLoadBtn">Sett del på lokasjon</button><button id="manualUnloadBtn">Fjern del fra lokasjon</button></div></section>
-</main><script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hyllekart</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="shelves">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <div class="section-title">
+            <h1>Hyllekart</h1>
+            <select id="shelfSelect"></select>
+          </div>
+          <svg id="shelfSvg" viewBox="0 0 1000 450" role="img"></svg>
+          <div id="shelfInfo" class="muted"></div>
+        </article>
+
+        <article class="card">
+          <h2>Hylleoppsett</h2>
+          <div class="form-grid">
+            <label>Bredde mm<input id="shelfWidth" type="number" min="1" /></label>
+            <label>Dybde mm<input id="shelfDepth" type="number" min="1" /></label>
+            <label>Standard Z mm<input id="shelfHeight" type="number" min="1" /></label>
+          </div>
+          <button id="saveSettingsBtn">Lagre mal</button>
+
+          <h2>Produksjonslokasjoner</h2>
+          <div class="form-grid">
+            <label>Deltype<select id="layoutPartType"></select></label>
+            <label>Kolonner<input id="layoutCols" type="number" value="4" min="1" /></label>
+            <label>Rader<input id="layoutRows" type="number" value="3" min="1" /></label>
+            <label>Z mm<input id="layoutZ" type="number" value="95" min="1" /></label>
+          </div>
+          <button id="generateLayoutBtn">Generer hylle</button>
+          <dl id="shelfResult" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="layout-2">
+        <article class="card">
+          <h2>Manuell inn/utlasting</h2>
+          <div class="form-grid">
+            <label>Slot<input id="manualSlotNo" type="number" value="1" min="1" /></label>
+            <label>Status<select id="manualStatus"><option value="raw">raw</option><option value="reserved">reserved</option><option value="wip">wip</option><option value="finished">finished</option><option value="quarantine">quarantine</option><option value="blocked">blocked</option></select></label>
+            <label>Deltype<select id="manualPartType"></select></label>
+          </div>
+          <div class="actions">
+            <button id="manualLoadBtn">Sett inn</button>
+            <button id="manualUnloadBtn" class="secondary">Ta ut</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Koordinater</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Deltype</th><th>Status</th><th>Dia</th><th>X</th><th>Y</th><th>Z</th></tr></thead>
+              <tbody id="coordsTable"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

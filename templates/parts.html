@@ -1,4 +1,44 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Deler</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="parts">{% include '_nav.html' %}
-<main><section class="card"><h2>Definer deltype</h2><div class="row"><input id="partTypeId" placeholder="ID"/><input id="partName" placeholder="Navn"/><input id="partProductId" placeholder="Produkt"/></div><div class="row"><input id="partQty" type="number" placeholder="Antall"/><input id="partDia" type="number" placeholder="Diameter"/><input id="partLen" type="number" placeholder="Lengde"/><input id="partHeight" type="number" placeholder="Høyde Z"/></div><button id="savePartBtn">Lagre del</button></section><section class="card"><h2>Deler</h2><table><thead><tr><th>ID</th><th>Navn</th><th>Dia</th><th>L</th><th>Z</th><th>Antall</th></tr></thead><tbody id="partsTable"></tbody></table></section></main>
-<script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deler</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="parts">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <h1>Deltype</h1>
+          <div class="form-grid">
+            <label>ID<input id="partTypeId" placeholder="PT-RAW-120" /></label>
+            <label>Navn<input id="partName" placeholder="Raemne O120" /></label>
+            <label>Produkt<input id="partProductId" placeholder="P1001" /></label>
+            <label>Antall<input id="partQty" type="number" min="0" /></label>
+            <label>Diameter<input id="partDia" type="number" min="0" /></label>
+            <label>Lengde<input id="partLen" type="number" min="0" /></label>
+            <label>Z hoyde<input id="partHeight" type="number" min="0" /></label>
+          </div>
+          <button id="savePartBtn">Lagre</button>
+        </article>
+        <article class="card">
+          <h2>Inventar</h2>
+          <dl id="inventoryList" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="card">
+        <h2>Deler</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>Navn</th><th>Produkt</th><th>Dia</th><th>L</th><th>Z</th><th>Antall</th></tr></thead>
+            <tbody id="partsTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

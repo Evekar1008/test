@@ -1,4 +1,34 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Stats</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="stats">{% include '_nav.html' %}
-<main><section class="card"><h2>Statistikk</h2><ul id="statsList"></ul></section><section class="card"><h2>Historikk</h2><table><thead><tr><th>Tid</th><th>Kategori</th><th>Melding</th></tr></thead><tbody id="historyTable"></tbody></table></section></main>
-<script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historikk</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="stats">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <h1>Statistikk</h1>
+          <dl id="statsList" class="kv"></dl>
+        </article>
+        <article class="card">
+          <h2>Produksjonsordre</h2>
+          <dl id="productionStatus" class="kv"></dl>
+        </article>
+      </section>
+      <section class="card">
+        <h2>Hendelser</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tid</th><th>Kategori</th><th>Melding</th></tr></thead>
+            <tbody id="historyTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

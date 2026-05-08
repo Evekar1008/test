@@ -1,4 +1,40 @@
-<!doctype html><html lang="no"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>CNC</title><link rel="stylesheet" href="/static/style.css"/></head>
-<body data-page="cnc">{% include '_nav.html' %}
-<main><section class="card"><h2>CNC status</h2><ul id="cncStatus"></ul></section><section class="card"><h2>FOCAS funksjoner</h2><div class="row"><select id="focasFunction"></select></div><div id="focasFields" class="row"></div><button id="runFocasBtn">Kjør FOCAS</button><pre id="focasResponse"></pre></section></main>
-<script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CNC / FOCAS</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="cnc">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <h1>CNC</h1>
+          <dl id="cncStatus" class="kv"></dl>
+        </article>
+        <article class="card">
+          <h2>Programvalg</h2>
+          <div class="form-grid">
+            <label>Produkt<select id="programProduct"></select></label>
+            <label>Program<select id="programSelect"></select></label>
+          </div>
+          <button id="selectProgramBtn">Velg program</button>
+          <dl id="cncProgramStatus" class="kv"></dl>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>FOCAS</h2>
+          <select id="focasFunction"></select>
+        </div>
+        <div id="focasFields" class="form-grid"></div>
+        <button id="runFocasBtn">Kjor FOCAS</button>
+        <pre id="focasResponse"></pre>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
