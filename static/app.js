@@ -480,6 +480,7 @@ async function initShelves() {
   fillSelect('shelfSelect', state.shelves, (s) => s, (s) => `Hylle ${s}`, state.active_shelf);
   fillSelect('layoutPartType', state.part_types, (p) => p.part_type_id, (p) => p.part_type_id);
   fillSelect('manualPartType', state.part_types, (p) => p.part_type_id, (p) => p.part_type_id);
+  fillSelect('bulkPartType', state.part_types, (p) => p.part_type_id, (p) => p.part_type_id);
   if ($('shelfWidth')) $('shelfWidth').value = state.settings.shelf_width_mm;
   if ($('shelfDepth')) $('shelfDepth').value = state.settings.shelf_depth_mm;
   if ($('shelfHeight')) $('shelfHeight').value = state.settings.shelf_height_mm;
@@ -539,6 +540,7 @@ async function initShelves() {
     }
   });
   on('manualLoadBtn', 'click', async () => {
+    if (!window.confirm(`Bekreft innlasting av del i hylle ${$('shelfSelect').value}, slot ${$('manualSlotNo').value}.`)) return;
     await postJson('/api/shelf/slot/update', {
       shelf: $('shelfSelect').value,
       slot_no: Number($('manualSlotNo').value),
@@ -549,6 +551,7 @@ async function initShelves() {
     await loadShelfLayout($('shelfSelect').value);
   });
   on('manualUnloadBtn', 'click', async () => {
+    if (!window.confirm(`Bekreft utlasting fra hylle ${$('shelfSelect').value}, slot ${$('manualSlotNo').value}.`)) return;
     await postJson('/api/shelf/slot/update', {
       shelf: $('shelfSelect').value,
       slot_no: Number($('manualSlotNo').value),
@@ -564,6 +567,36 @@ async function initShelves() {
         shelf: $('shelfSelect').value,
         status: $('bulkStatus').value,
         include_empty: Boolean($('bulkIncludeEmpty')?.checked),
+        part_type_id: $('bulkPartType')?.value,
+      });
+      renderKv('shelfResult', result);
+      await loadShelfLayout($('shelfSelect').value);
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('fillShelfBtn', 'click', async () => {
+    try {
+      if (!window.confirm(`Bekreft innlasting av hele hylle ${$('shelfSelect').value} med ${$('bulkPartType').value}.`)) return;
+      const result = await postJson('/api/shelf/status-bulk', {
+        shelf: $('shelfSelect').value,
+        status: 'raw',
+        include_empty: true,
+        part_type_id: $('bulkPartType').value,
+      });
+      renderKv('shelfResult', result);
+      await loadShelfLayout($('shelfSelect').value);
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('emptyShelfBtn', 'click', async () => {
+    try {
+      if (!window.confirm(`Bekreft utlasting av alle deler fra hylle ${$('shelfSelect').value}.`)) return;
+      const result = await postJson('/api/shelf/status-bulk', {
+        shelf: $('shelfSelect').value,
+        status: 'empty',
+        include_empty: true,
       });
       renderKv('shelfResult', result);
       await loadShelfLayout($('shelfSelect').value);

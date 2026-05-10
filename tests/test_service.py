@@ -71,6 +71,21 @@ def test_set_shelf_status_changes_all_occupied_locations_only():
     assert all(slot["status"] == "quarantine" for slot in service.shelf_slots["1"][1:])
 
 
+def test_fill_and_empty_entire_shelf():
+    service = ProductionCellService()
+    service.set_shelf_status("6", "raw", include_empty=True, part_type_id="PT-RAW-120")
+
+    assert all(slot["occupied"] for slot in service.shelf_slots["6"])
+    assert all(slot["part_type_id"] == "PT-RAW-120" for slot in service.shelf_slots["6"])
+    assert all(slot["status"] == "raw" for slot in service.shelf_slots["6"])
+
+    result = service.set_shelf_status("6", "empty", include_empty=True)
+
+    assert result["changed"] == len(service.shelf_slots["6"])
+    assert all(not slot["occupied"] for slot in service.shelf_slots["6"])
+    assert all(slot["status"] == "empty" for slot in service.shelf_slots["6"])
+
+
 def test_graphic_layout_and_manual_load_unload():
     service = ProductionCellService()
     layout = service.configure_shelf_layout_graphic("5", "PT-RAW-120", 2, 2, 95, 20, 50)

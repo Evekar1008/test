@@ -779,18 +779,27 @@ class ProductionCellService:
             self._log("production", f"Started job {job['job_id']} with FIFO shelf {first['shelf']} slot {first['slot']['slot_no']}")
             return self.production_order
 
-    def set_shelf_status(self, shelf: str, status: str, include_empty: bool = False) -> Dict[str, Any]:
+    def set_shelf_status(self, shelf: str, status: str, include_empty: bool = False, part_type_id: str | None = None) -> Dict[str, Any]:
         with self.lock:
             if shelf not in self.shelves:
                 raise ValueError("Unknown shelf")
             normalized_status = self._status_alias(status)
+            part_type = self._get_part_type(part_type_id) if part_type_id else None
+            if normalized_status != "empty" and include_empty and not part_type:
+                empty_slots = [slot for slot in self.shelf_slots[shelf] if not slot["occupied"]]
+                if empty_slots:
+                    raise ValueError("part_type_id is required when filling empty shelf locations")
             changed = 0
             for slot in self.shelf_slots[shelf]:
                 if not include_empty and not slot["occupied"]:
                     continue
                 if normalized_status == "empty":
                     slot.update({"occupied": False, "status": "empty", "part_type_id": "", "part_no": None, "fifo_seq": None, "loaded_at": None})
+                elif not slot["occupied"]:
+                    self._mark_slot_loaded(slot, part_type["part_type_id"], slot["slot_no"], normalized_status)
                 else:
+                    if part_type:
+                        slot["part_type_id"] = part_type["part_type_id"]
                     slot["status"] = normalized_status
                 changed += 1
             self._log("inventory", f"Set {changed} locations on shelf {shelf} to {normalized_status}")

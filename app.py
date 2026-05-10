@@ -183,6 +183,7 @@ def api_shelf_status_bulk():
                 str(payload.get("shelf", "")),
                 payload.get("status", "raw"),
                 bool(payload.get("include_empty", False)),
+                payload.get("part_type_id"),
             )
         )
     except ValueError as exc:
