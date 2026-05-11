@@ -1,4 +1,12 @@
+import importlib
+import time
+
 from app import ProductionCellService, app
+from cell_controller import CellController
+from config import load_config
+from integrations.cmz_focas_client import CmzFocasClient
+from integrations.cmz_loader_signals import build_cmz_signal_map
+from integrations.haenel_client import HaenelClient
 
 
 def test_shelves_are_numbered_1_to_50():
@@ -121,6 +129,27 @@ def test_imported_layout_rows_are_validated_and_loaded():
     assert layout["slots"][1]["status"] == "raw"
 
 
+def test_cylinder_tray_auto_layout_uses_hex_when_it_fits_more_parts():
+    service = ProductionCellService()
+    layout = service.configure_shelf_layout_graphic(
+        "9",
+        "PT-INP-080",
+        4,
+        3,
+        55,
+        part_clearance_mm=10,
+        wall_clearance_mm=40,
+        packing="Auto",
+        material="Aluminum",
+        density_kg_m3=2700,
+        max_height_mm=150,
+    )
+
+    assert layout["layout_metadata"]["source"] == "cylinder_tray"
+    assert layout["layout_metadata"]["count"] == len(layout["slots"])
+    assert layout["layout_metadata"]["total_weight_kg"] > 0
+
+
 def test_lift_access_points_separate_operator_and_robot_requests():
     service = ProductionCellService()
     service.request_shelf("4", access_point=1, actor="operator")
@@ -202,3 +231,81 @@ def test_dashboard_is_public_but_admin_requires_login():
     login = client.post("/login", data={"username": "admin", "password": "admin123", "next": "/admin"})
     assert login.status_code == 302
     assert client.get("/admin").status_code == 200
+
+
+def test_signal_maps_use_selected_cmz_family_addresses():
+    ta_td = build_cmz_signal_map("TA_TD")
+    ttl_tts = build_cmz_signal_map("TTL_TTS")
+
+    assert ta_td.base == 2000
+    assert ta_td.out.m474_executed.address == 2052
+    assert ta_td.in_.loader_inside.address == 2000
+
+    assert ttl_tts.base == 6100
+    assert ttl_tts.out.m474_executed.address == 6152
+    assert ttl_tts.in_.loader_inside.address == 6100
+
+
+def test_invalid_machine_family_env_raises(monkeypatch):
+    monkeypatch.setenv("CMZ_MACHINE_FAMILY", "BAD_FAMILY")
+    try:
+        load_config()
+    except RuntimeError as exc:
+        assert "Invalid CMZ_MACHINE_FAMILY" in str(exc)
+    else:
+        raise AssertionError("Expected invalid machine family to fail")
+
+
+def test_cell_controller_start_is_single_thread():
+    service = ProductionCellService()
+    signals = build_cmz_signal_map("TA_TD")
+    controller = CellController(
+        service,
+        CmzFocasClient("127.0.0.1", signals, status_provider=service.get_state),
+        HaenelClient("http://127.0.0.1"),
+    )
+
+    controller.start()
+    first_thread = controller.thread
+    controller.start()
+    assert controller.thread is first_thread
+    assert first_thread is not None
+    assert first_thread.is_alive()
+
+    controller.stop()
+    first_thread.join(timeout=2)
+    assert not first_thread.is_alive()
+
+
+def test_flask_job_start_submits_controller_command_without_blocking(monkeypatch):
+    app_module = importlib.import_module("app")
+
+    class FakeController:
+        def __init__(self):
+            self.commands = []
+
+        def submit(self, name, payload=None):
+            self.commands.append((name, payload or {}))
+
+    fake = FakeController()
+    monkeypatch.setattr(app_module, "cell_controller", fake)
+    app.config.update(TESTING=True)
+
+    job = app_module.service.create_job(
+        {
+            "job_name": f"Pytest job {time.time()}",
+            "part_type_id": "PT-RAW-120",
+            "program_source_type": "cnc_existing",
+            "program_name": "O1200",
+        }
+    )
+
+    client = app.test_client()
+    client.post("/login", data={"username": "operator", "password": "operator123", "next": "/"})
+    started_at = time.monotonic()
+    response = client.post(f"/api/jobs/{job['job_id']}/start", json={"mode": "quantity", "quantity": 1})
+    elapsed = time.monotonic() - started_at
+
+    assert response.status_code == 200
+    assert elapsed < 1.0
+    assert fake.commands == [("START_JOB", {"job_id": job["job_id"]})]

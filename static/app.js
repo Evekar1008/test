@@ -1,10 +1,22 @@
 const $ = (id) => document.getElementById(id);
 
+const MATERIAL_DENSITIES = {
+  Steel: 7850,
+  'Stainless steel': 8000,
+  Aluminum: 2700,
+  Brass: 8500,
+  Copper: 8960,
+  Titanium: 4500,
+  'Plastic (PA/nylon)': 1150,
+  'Plastic (POM)': 1410,
+  Custom: 7850,
+};
+
 const SIGNAL_KEYS = {
   safety: ['EmergencyStopActive', 'GatesClosed', 'ScannerClear', 'Mode'],
   leanlift: ['CurrentShelf', 'AccessPoint', 'RobotShelf', 'OperatorShelf', 'TrayPresent', 'TrayExtended', 'DoorClosed', 'AlarmActive', 'StatusMessage'],
   robot: ['Ready', 'Busy', 'Fault', 'AtHome', 'PartInGripper', 'StationComplete', 'ActiveTask', 'StatusMessage'],
-  cnc: ['MachineReady', 'CycleRunning', 'CycleComplete', 'AlarmActive', 'PartPresent', 'SelectedProgram', 'LoadedProgram', 'ProgramSource', 'ProgramTransferState', 'StatusMessage'],
+  cnc: ['MachineReady', 'CncOn', 'NoAlarm', 'LoaderEnable', 'AirPressureOk', 'MachinePositionOk', 'M474Executed', 'M475Executed', 'CycleRunning', 'CycleComplete', 'AlarmActive', 'PartPresent', 'SelectedProgram', 'LoadedProgram', 'ProgramSource', 'ProgramTransferState', 'StatusMessage'],
 };
 
 async function getState() {
@@ -91,7 +103,7 @@ function renderMachineStatus(state) {
   };
   renderKv('liftStatus', state.lift, ['connection', 'current_shelf', 'access_point', 'robot_shelf', 'operator_shelf', 'last_actor', 'tray_present', 'tray_extended', 'door_closed', 'alarm_active', 'status_message']);
   renderKv('robotStatus', robotView, ['connection', 'ready', 'busy', 'fault', 'at_home', 'part_in_gripper', 'station_complete', 'active_task', 'next_pick', 'place_target', 'status_message']);
-  renderKv('cncStatus', state.cnc, ['connection', 'machine_state', 'selected_program', 'loaded_program', 'program_source', 'program_transfer_state', 'program_valid', 'machine_ready', 'cycle_running', 'cycle_complete', 'alarm_active', 'part_present', 'part_counter']);
+  renderKv('cncStatus', state.cnc, ['connection', 'machine_state', 'selected_program', 'loaded_program', 'program_source', 'program_transfer_state', 'program_valid', 'cnc_on', 'no_alarm', 'loader_enable', 'air_pressure_ok', 'machine_position_ok', 'm474_executed', 'm475_executed', 'machine_ready', 'cycle_running', 'cycle_complete', 'alarm_active', 'part_present', 'part_counter']);
   renderKv('safetyStatus', state.safety, ['safety_ok', 'emergency_stop_active', 'gates_closed', 'scanner_clear', 'mode_key', 'last_trip']);
 }
 
@@ -230,12 +242,27 @@ function renderCoords(layout) {
   });
 }
 
+function renderLayoutResult(layout) {
+  const meta = layout.layout_metadata || {};
+  renderKv('shelfResult', {
+    shelf: layout.shelf,
+    slots: layout.slots?.length || 0,
+    packing: meta.packing || '-',
+    columns: meta.cols || '-',
+    rows: meta.rows || '-',
+    weight_each_kg: meta.weight_one_kg ?? '-',
+    total_weight_kg: meta.total_weight_kg ?? '-',
+    area_utilization_pct: meta.area_utilization_pct ?? '-',
+  });
+}
+
 async function loadShelfLayout(shelf) {
   const response = await fetch(`/api/leanlift/shelf-layout/${encodeURIComponent(shelf)}`);
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || 'Unable to load shelf');
   renderShelfSvg(data);
   renderCoords(data);
+  renderLayoutResult(data);
   return data;
 }
 
@@ -254,6 +281,10 @@ function fillSelect(id, items, valueFn, labelFn, selectedValue) {
 
 function selectedPartType(state) {
   const partTypeId = $('prodPartType')?.value || state.part_types?.[0]?.part_type_id;
+  return state.part_types.find((part) => part.part_type_id === partTypeId) || state.part_types[0];
+}
+
+function partTypeById(state, partTypeId) {
   return state.part_types.find((part) => part.part_type_id === partTypeId) || state.part_types[0];
 }
 
@@ -489,9 +520,21 @@ async function initShelves() {
   if ($('wallClearance')) $('wallClearance').value = state.settings.wall_clearance_mm;
   if ($('layoutPartClearance')) $('layoutPartClearance').value = state.settings.part_clearance_mm;
   if ($('layoutWallClearance')) $('layoutWallClearance').value = state.settings.wall_clearance_mm;
+  if ($('layoutMaxHeight')) $('layoutMaxHeight').value = Math.max(150, Number(state.settings.shelf_height_mm || 150));
+  if ($('layoutDensity')) $('layoutDensity').value = MATERIAL_DENSITIES[$('layoutMaterial')?.value || 'Steel'] || 7850;
+  const updateLayoutDefaults = () => {
+    const part = partTypeById(state, $('layoutPartType')?.value);
+    if (part && $('layoutZ')) $('layoutZ').value = part.height_mm || part.length_mm || $('layoutZ').value;
+    if (part && $('layoutMaxHeight')) $('layoutMaxHeight').value = Math.max(Number($('layoutMaxHeight').value || 0), Number(part.height_mm || part.length_mm || 0));
+  };
+  updateLayoutDefaults();
   await loadShelfLayout($('shelfSelect').value);
 
   on('shelfSelect', 'change', async () => loadShelfLayout($('shelfSelect').value));
+  on('layoutPartType', 'change', updateLayoutDefaults);
+  on('layoutMaterial', 'change', () => {
+    if ($('layoutDensity')) $('layoutDensity').value = MATERIAL_DENSITIES[$('layoutMaterial').value] || MATERIAL_DENSITIES.Custom;
+  });
   on('saveSettingsBtn', 'click', async () => {
     await postJson('/api/settings', {
       shelf_width_mm: Number($('shelfWidth').value),
@@ -512,10 +555,14 @@ async function initShelves() {
         z_mm: Number($('layoutZ').value),
         part_clearance_mm: Number($('layoutPartClearance').value),
         wall_clearance_mm: Number($('layoutWallClearance').value),
+        packing: $('layoutPacking')?.value || 'Grid',
+        material: $('layoutMaterial')?.value || 'Steel',
+        density_kg_m3: Number($('layoutDensity')?.value || 7850),
+        max_height_mm: Number($('layoutMaxHeight')?.value || state.settings.shelf_height_mm),
       });
       renderShelfSvg(layout);
       renderCoords(layout);
-      renderKv('shelfResult', { shelf: layout.shelf, slots: layout.slots.length });
+      renderLayoutResult(layout);
     } catch (error) {
       alert(error.message);
     }
@@ -535,7 +582,7 @@ async function initShelves() {
       const layout = await postForm(`/api/leanlift/shelf-layout/${encodeURIComponent($('shelfSelect').value)}/import`, formData);
       renderShelfSvg(layout);
       renderCoords(layout);
-      renderKv('shelfResult', { shelf: layout.shelf, imported_slots: layout.slots.length });
+      renderLayoutResult(layout);
     } catch (error) {
       alert(error.message);
     }
@@ -678,6 +725,17 @@ async function initAdmin() {
         active: $('adminActive').checked,
       });
       renderKv('adminStatus', result);
+      await loadUsers();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  on('clearDataBtn', 'click', async () => {
+    try {
+      const message = 'Dette sletter jobber, lagerstatus, hylleoppsett, historikk og simuleringsdata i utviklingsversjonen. Bekreft sletting.';
+      if (!window.confirm(message)) return;
+      const result = await postJson('/api/admin/clear-data');
+      renderKv('clearDataStatus', result);
       await loadUsers();
     } catch (error) {
       alert(error.message);

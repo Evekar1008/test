@@ -11,6 +11,19 @@ from typing import Any, Dict, List
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
+MATERIAL_DENSITIES = {
+    "Steel": 7850,
+    "Stainless steel": 8000,
+    "Aluminum": 2700,
+    "Brass": 8500,
+    "Copper": 8960,
+    "Titanium": 4500,
+    "Plastic (PA/nylon)": 1150,
+    "Plastic (POM)": 1410,
+    "Custom": 7850,
+}
+
+
 @dataclass
 class Product:
     id: str
@@ -66,6 +79,7 @@ class ProductionCellService:
         self.shelves = [str(i) for i in range(1, 51)]
         self.active_shelf = "1"
         self.shelf_slots: Dict[str, List[Dict[str, Any]]] = {s: self._generate_slots(4, 3) for s in self.shelves}
+        self.shelf_layout_metadata: Dict[str, Dict[str, Any]] = {s: {} for s in self.shelves}
         self._seed_demo_inventory()
 
         self.safety_status = {
@@ -98,9 +112,19 @@ class ProductionCellService:
             "vendor": "Fanuc / CMZ TD55",
             "connection": "Simulated FOCAS + OPC UA",
             "machine_ready": True,
+            "cnc_on": True,
+            "no_alarm": True,
+            "loader_enable": True,
+            "air_pressure_ok": True,
+            "machine_position_ok": True,
             "cycle_running": False,
             "cycle_complete": False,
             "alarm_active": False,
+            "chuck1_open": False,
+            "chuck1_closed": True,
+            "door_closed_locked": True,
+            "m474_executed": False,
+            "m475_executed": False,
             "part_present": False,
             "machine_state": "Ready",
             "selected_program": "O1200",
@@ -179,6 +203,13 @@ class ProductionCellService:
             "last_error": "",
             "node_count": 0,
         }
+        self.controller_status = {
+            "running": False,
+            "state": "Idle",
+            "last_error": "",
+            "last_transition": "",
+        }
+        self.runtime_config = {}
 
         self.history: List[Dict[str, Any]] = []
         self.diagnostics: List[Dict[str, Any]] = []
@@ -278,6 +309,164 @@ class ProductionCellService:
                 )
                 slot_no += 1
         return slots
+
+    def _build_grid_positions(
+        self,
+        length_mm: float,
+        width_mm: float,
+        diameter_mm: float,
+        margin_mm: float,
+        clearance_mm: float,
+    ) -> tuple[List[tuple[float, float]], int, int]:
+        radius = diameter_mm / 2
+        min_pitch = diameter_mm + clearance_mm
+        usable_length = length_mm - 2 * margin_mm
+        usable_width = width_mm - 2 * margin_mm
+
+        if usable_length < diameter_mm or usable_width < diameter_mm:
+            return [], 0, 0
+
+        cols = max(int((usable_length - diameter_mm) // min_pitch) + 1, 0)
+        rows = max(int((usable_width - diameter_mm) // min_pitch) + 1, 0)
+        if cols <= 0 or rows <= 0:
+            return [], 0, 0
+
+        if cols == 1:
+            x_positions = [margin_mm + usable_length / 2]
+        else:
+            step_x = (usable_length - diameter_mm) / (cols - 1)
+            x_positions = [margin_mm + radius + col * step_x for col in range(cols)]
+
+        if rows == 1:
+            y_positions = [margin_mm + usable_width / 2]
+        else:
+            step_y = (usable_width - diameter_mm) / (rows - 1)
+            y_positions = [margin_mm + radius + row * step_y for row in range(rows)]
+
+        return [(x, y) for y in y_positions for x in x_positions], cols, rows
+
+    def _build_hex_positions(
+        self,
+        length_mm: float,
+        width_mm: float,
+        diameter_mm: float,
+        margin_mm: float,
+        clearance_mm: float,
+    ) -> tuple[List[tuple[float, float]], int, int]:
+        radius = diameter_mm / 2
+        usable_length = length_mm - 2 * margin_mm
+        usable_width = width_mm - 2 * margin_mm
+
+        if usable_length < diameter_mm or usable_width < diameter_mm:
+            return [], 0, 0
+
+        usable_span_x = usable_length - diameter_mm
+        usable_span_y = usable_width - diameter_mm
+        min_pitch_x = diameter_mm + clearance_mm
+        min_row_step = min_pitch_x * math.sqrt(3) / 2
+
+        rows = max(int(usable_span_y // min_row_step) + 1, 0)
+        if rows <= 0:
+            return [], 0, 0
+
+        even_cols = max(int(usable_span_x // min_pitch_x) + 1, 0)
+        if even_cols <= 0:
+            return [], 0, 0
+
+        odd_cols = even_cols
+        while odd_cols > 0:
+            denominator = max(even_cols - 1, odd_cols - 0.5)
+            max_pitch_x = usable_span_x / denominator if denominator > 0 else usable_span_x
+            if max_pitch_x + 1e-9 >= min_pitch_x:
+                break
+            odd_cols -= 1
+
+        if odd_cols <= 0:
+            return [], 0, 0
+
+        denominator = max(even_cols - 1, odd_cols - 0.5)
+        pitch_x = usable_span_x / denominator if denominator > 0 else 0
+        layout_width = denominator * pitch_x
+        base_x = margin_mm + radius + (usable_span_x - layout_width) / 2
+
+        if rows == 1:
+            y_positions = [margin_mm + usable_width / 2]
+        else:
+            step_y = usable_span_y / (rows - 1)
+            y_positions = [margin_mm + radius + row * step_y for row in range(rows)]
+
+        positions = []
+        for row_index, y_pos in enumerate(y_positions):
+            row_cols = even_cols if row_index % 2 == 0 else odd_cols
+            start_x = base_x if row_index % 2 == 0 else base_x + pitch_x / 2
+            for col_index in range(row_cols):
+                positions.append((start_x + col_index * pitch_x, y_pos))
+
+        return positions, max(even_cols, odd_cols), rows
+
+    def _build_cylinder_tray_layout(
+        self,
+        board_length_mm: float,
+        board_width_mm: float,
+        diameter_mm: float,
+        height_mm: float,
+        max_height_mm: float,
+        margin_mm: float,
+        clearance_mm: float,
+        packing: str,
+        density_kg_m3: float,
+    ) -> Dict[str, Any]:
+        if board_length_mm <= 0 or board_width_mm <= 0 or diameter_mm <= 0 or height_mm <= 0:
+            raise ValueError("Board and cylinder dimensions must be greater than zero")
+        if max_height_mm <= 0:
+            raise ValueError("Max part height must be greater than zero")
+        if margin_mm < 0 or clearance_mm < 0:
+            raise ValueError("Clearance values cannot be negative")
+        if density_kg_m3 <= 0:
+            raise ValueError("Density must be greater than zero")
+        if height_mm > max_height_mm:
+            raise ValueError(f"Part height exceeds max allowed height of {max_height_mm:.1f} mm")
+        if diameter_mm + 2 * margin_mm > board_length_mm or diameter_mm + 2 * margin_mm > board_width_mm:
+            raise ValueError("Part does not fit on the tray with the selected wall clearance")
+
+        grid_positions, grid_cols, grid_rows = self._build_grid_positions(board_length_mm, board_width_mm, diameter_mm, margin_mm, clearance_mm)
+        hex_positions, hex_cols, hex_rows = self._build_hex_positions(board_length_mm, board_width_mm, diameter_mm, margin_mm, clearance_mm)
+
+        normalized_packing = (packing or "Auto").strip().lower()
+        if normalized_packing == "grid":
+            packing_name = "Grid"
+            positions, cols, rows = grid_positions, grid_cols, grid_rows
+        elif normalized_packing == "hex":
+            packing_name = "Hex"
+            positions, cols, rows = hex_positions, hex_cols, hex_rows
+        else:
+            if len(hex_positions) > len(grid_positions):
+                packing_name = "Hex"
+                positions, cols, rows = hex_positions, hex_cols, hex_rows
+            else:
+                packing_name = "Grid"
+                positions, cols, rows = grid_positions, grid_cols, grid_rows
+
+        if not positions:
+            raise ValueError("No parts fit on the shelf with the selected dimensions")
+
+        radius_m = (diameter_mm / 1000) / 2
+        height_m = height_mm / 1000
+        volume_one_m3 = math.pi * radius_m * radius_m * height_m
+        weight_one_kg = volume_one_m3 * density_kg_m3
+        used_area_mm2 = len(positions) * math.pi * (diameter_mm / 2) ** 2
+        tray_area_mm2 = board_length_mm * board_width_mm
+
+        return {
+            "packing": packing_name,
+            "positions": positions,
+            "cols": cols,
+            "rows": rows,
+            "count": len(positions),
+            "weight_one_kg": round(weight_one_kg, 3),
+            "total_weight_kg": round(weight_one_kg * len(positions), 3),
+            "area_utilization_pct": round((used_area_mm2 / tray_area_mm2) * 100, 1),
+        }
 
     def _seed_demo_inventory(self) -> None:
         seed = [("1", "PT-RAW-120"), ("2", "PT-RAW-280"), ("3", "PT-INP-080")]
@@ -491,6 +680,7 @@ class ProductionCellService:
                 "part_clearance_mm": self.settings["part_clearance_mm"],
                 "wall_clearance_mm": self.settings["wall_clearance_mm"],
                 "status_colors": self.settings["status_colors"],
+                "layout_metadata": self.shelf_layout_metadata.get(shelf, {}),
                 "slots": [self._enrich_slot(slot) for slot in self.shelf_slots[shelf]],
             }
 
@@ -524,6 +714,8 @@ class ProductionCellService:
                 "lift": self.lift_status,
                 "safety": self.safety_status,
                 "opcua": self.opcua_status,
+                "controller_status": dict(self.controller_status),
+                "config": dict(self.runtime_config),
                 "simulation": self.simulation,
                 "production_order": self.production_order,
                 "dashboard": self._dashboard_metrics(),
@@ -554,6 +746,28 @@ class ProductionCellService:
             self._log("settings", "Updated shelf/status settings")
             return self.settings
 
+    def set_runtime_config(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        with self.lock:
+            self.runtime_config = dict(payload)
+            return dict(self.runtime_config)
+
+    def update_controller_status(
+        self,
+        state: str,
+        running: bool,
+        last_error: str = "",
+    ) -> Dict[str, Any]:
+        with self.lock:
+            self.controller_status.update(
+                {
+                    "running": running,
+                    "state": state,
+                    "last_error": last_error,
+                    "last_transition": self._now(),
+                }
+            )
+            return dict(self.controller_status)
+
     def configure_shelf_layout_graphic(
         self,
         shelf: str,
@@ -563,20 +777,86 @@ class ProductionCellService:
         z_mm: float,
         part_clearance_mm: float | None = None,
         wall_clearance_mm: float | None = None,
+        packing: str = "Grid",
+        material: str = "Steel",
+        density_kg_m3: float | None = None,
+        max_height_mm: float | None = None,
     ) -> Dict[str, Any]:
         with self.lock:
             if shelf not in self.shelves:
                 raise ValueError("Unknown shelf")
-            if cols <= 0 or rows <= 0 or cols * rows > 120:
-                raise ValueError("Layout must contain 1-120 locations")
             part_type = self._get_part_type(part_type_id)
             clearance = float(self.settings["part_clearance_mm"] if part_clearance_mm is None else part_clearance_mm)
             wall_clearance = float(self.settings["wall_clearance_mm"] if wall_clearance_mm is None else wall_clearance_mm)
-            slots = self._generate_slots(cols, rows, z_mm, float(part_type["diameter_mm"]), clearance, wall_clearance)
+            density = float(MATERIAL_DENSITIES.get(material, MATERIAL_DENSITIES["Steel"]) if density_kg_m3 is None else density_kg_m3)
+            height = float(part_type.get("height_mm") or part_type.get("length_mm") or z_mm)
+            max_height = float(self.settings["shelf_height_mm"] if max_height_mm is None else max_height_mm)
+
+            if (packing or "Grid").strip().lower() in {"auto", "hex"}:
+                tray = self._build_cylinder_tray_layout(
+                    float(self.settings["shelf_width_mm"]),
+                    float(self.settings["shelf_depth_mm"]),
+                    float(part_type["diameter_mm"]),
+                    height,
+                    max_height,
+                    wall_clearance,
+                    clearance,
+                    packing,
+                    density,
+                )
+                slots = []
+                for index, (x_mm, y_mm) in enumerate(tray["positions"], start=1):
+                    slots.append(
+                        {
+                            "slot_no": index,
+                            "x_mm": round(x_mm, 2),
+                            "y_mm": round(y_mm, 2),
+                            "z_mm": float(z_mm if z_mm is not None else self.settings["shelf_height_mm"]),
+                            "occupied": False,
+                            "status": "empty",
+                            "part_type_id": "",
+                            "part_no": None,
+                            "fifo_seq": None,
+                            "loaded_at": None,
+                        }
+                    )
+                metadata = {
+                    "source": "cylinder_tray",
+                    "packing": tray["packing"],
+                    "material": material,
+                    "density_kg_m3": density,
+                    "diameter_mm": float(part_type["diameter_mm"]),
+                    "height_mm": height,
+                    "max_height_mm": max_height,
+                    "cols": tray["cols"],
+                    "rows": tray["rows"],
+                    "count": tray["count"],
+                    "weight_one_kg": tray["weight_one_kg"],
+                    "total_weight_kg": tray["total_weight_kg"],
+                    "area_utilization_pct": tray["area_utilization_pct"],
+                }
+            else:
+                if cols <= 0 or rows <= 0 or cols * rows > 120:
+                    raise ValueError("Layout must contain 1-120 locations")
+                slots = self._generate_slots(cols, rows, z_mm, float(part_type["diameter_mm"]), clearance, wall_clearance)
+                metadata = {
+                    "source": "grid",
+                    "packing": "Grid",
+                    "material": material,
+                    "density_kg_m3": density,
+                    "diameter_mm": float(part_type["diameter_mm"]),
+                    "height_mm": height,
+                    "max_height_mm": max_height,
+                    "cols": cols,
+                    "rows": rows,
+                    "count": len(slots),
+                }
+
             self._validate_slot_clearance(slots, float(part_type["diameter_mm"]), clearance, wall_clearance)
             for index, slot in enumerate(slots, start=1):
                 self._mark_slot_loaded(slot, part_type_id, index, "raw")
             self.shelf_slots[shelf] = slots
+            self.shelf_layout_metadata[shelf] = metadata
             self.settings["part_clearance_mm"] = clearance
             self.settings["wall_clearance_mm"] = wall_clearance
             self._log("shelf", f"Configured shelf {shelf} with {len(slots)} production locations and clearance validation")
@@ -748,6 +1028,42 @@ class ProductionCellService:
             self.users.pop(key)
             self._log("admin", f"Deleted user {key}")
             return {"deleted": key}
+
+    def clear_development_data(self) -> Dict[str, Any]:
+        with self.lock:
+            self.inventory_sequence = 0
+            self.job_sequence = 0
+            self.shelf_slots = {s: self._generate_slots(4, 3) for s in self.shelves}
+            self.shelf_layout_metadata = {s: {} for s in self.shelves}
+            self.active_shelf = "1"
+            self.jobs = []
+            self.production_order.update(
+                {
+                    "active": False,
+                    "job_id": "",
+                    "job_name": "",
+                    "part_type_id": "",
+                    "product_id": "",
+                    "target_qty": 0,
+                    "processed_qty": 0,
+                    "mode": "quantity",
+                    "next_pick": None,
+                    "started_at": "",
+                    "last_cycle_started_at": "",
+                    "cycle_time_sec_estimate": 0,
+                    "avg_cycle_time_sec": 0,
+                    "state": "Idle",
+                }
+            )
+            self.robot_status.update({"busy": False, "part_in_gripper": False, "active_task": "Idle", "next_pick": None, "place_target": None})
+            self.cnc_status.update({"cycle_running": False, "cycle_complete": False, "part_counter": 0, "machine_state": "Ready"})
+            self.lift_status.update({"current_shelf": "1", "access_point": 2, "robot_shelf": "1", "operator_shelf": "1", "last_actor": "system"})
+            self.simulation = {"running": False, "tick": 0, "active_shelf": self.active_shelf, "last_event": "Data cleared"}
+            self.controller_status.update({"state": "Idle", "last_error": "", "last_transition": self._now()})
+            self.history = []
+            self.diagnostics = []
+            self._log("admin", "Cleared development data")
+            return {"ok": True, "message": "Development data cleared"}
 
     def _normalize_program_name(self, value: str) -> str:
         raw = (value or "").strip().upper()
@@ -1156,7 +1472,30 @@ class ProductionCellService:
             key_aliases = {
                 "safety": {"safetyok": "safety_ok", "emergencystopactive": "emergency_stop_active", "gatesclosed": "gates_closed", "scannerclear": "scanner_clear", "mode": "mode_key", "modekey": "mode_key"},
                 "robot": {"ready": "ready", "busy": "busy", "fault": "fault", "athome": "at_home", "partingripper": "part_in_gripper", "stationcomplete": "station_complete", "activetask": "active_task", "statusmessage": "status_message"},
-                "cnc": {"machineready": "machine_ready", "cyclerunning": "cycle_running", "cyclecomplete": "cycle_complete", "alarmactive": "alarm_active", "partpresent": "part_present", "selectedprogram": "selected_program", "loadedprogram": "loaded_program", "programsource": "program_source", "programtransferstate": "program_transfer_state", "statusmessage": "status_message"},
+                "cnc": {
+                    "machineready": "machine_ready",
+                    "cncon": "cnc_on",
+                    "noalarm": "no_alarm",
+                    "loaderenable": "loader_enable",
+                    "airpressureok": "air_pressure_ok",
+                    "machinepositionok": "machine_position_ok",
+                    "cyclerunning": "cycle_running",
+                    "cyclecomplete": "cycle_complete",
+                    "alarmactive": "alarm_active",
+                    "chuck1open": "chuck1_open",
+                    "chuck1closed": "chuck1_closed",
+                    "doorclosedlocked": "door_closed_locked",
+                    "m474": "m474_executed",
+                    "m474executed": "m474_executed",
+                    "m475": "m475_executed",
+                    "m475executed": "m475_executed",
+                    "partpresent": "part_present",
+                    "selectedprogram": "selected_program",
+                    "loadedprogram": "loaded_program",
+                    "programsource": "program_source",
+                    "programtransferstate": "program_transfer_state",
+                    "statusmessage": "status_message",
+                },
                 "leanlift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "robotshelf": "robot_shelf", "operatorshelf": "operator_shelf", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
                 "lift": {"currentshelf": "current_shelf", "accesspoint": "access_point", "robotshelf": "robot_shelf", "operatorshelf": "operator_shelf", "traypresent": "tray_present", "trayextended": "tray_extended", "doorclosed": "door_closed", "alarmactive": "alarm_active", "statusmessage": "status_message"},
             }
@@ -1203,18 +1542,22 @@ class ProductionCellService:
         if self.cnc_status["alarm_active"]:
             self.cnc_status["machine_state"] = "Alarm"
             self.cnc_status["alarm"] = "Simulated alarm"
+            self.cnc_status["no_alarm"] = False
         elif self.cnc_status["cycle_running"]:
             self.cnc_status["machine_state"] = "Running"
             self.cnc_status["spindle_rpm"] = 1400
             self.cnc_status["feed_rate"] = 220
+            self.cnc_status["no_alarm"] = True
         elif self.cnc_status["cycle_complete"]:
             self.cnc_status["machine_state"] = "Cycle complete"
             self.cnc_status["spindle_rpm"] = 0
             self.cnc_status["feed_rate"] = 0
+            self.cnc_status["no_alarm"] = True
         else:
             self.cnc_status["machine_state"] = "Ready" if self.cnc_status["machine_ready"] else "Not ready"
             self.cnc_status["spindle_rpm"] = 0
             self.cnc_status["feed_rate"] = 0
+            self.cnc_status["no_alarm"] = True
 
         if self.lift_status["alarm_active"]:
             self.lift_status["status_message"] = "Alarm"
@@ -1251,6 +1594,14 @@ class ProductionCellService:
             elif name in {"CNC_COMPLETE", "CYCLE_COMPLETE"}:
                 self.update_machine_signals(source, {"cnc": {"cycle_running": False, "cycle_complete": True}})
                 self.complete_one_part()
+            elif name in {"M474", "M474_ON"}:
+                self.update_machine_signals(source, {"cnc": {"m474_executed": True}})
+            elif name == "M474_OFF":
+                self.update_machine_signals(source, {"cnc": {"m474_executed": False}})
+            elif name in {"M475", "M475_ON"}:
+                self.update_machine_signals(source, {"cnc": {"m475_executed": True}})
+            elif name == "M475_OFF":
+                self.update_machine_signals(source, {"cnc": {"m475_executed": False}})
             elif name == "ROBOT_FAULT":
                 self.update_machine_signals(source, {"robot": {"fault": True}})
             elif name == "RESET_ALARMS":

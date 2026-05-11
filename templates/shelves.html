@@ -33,11 +33,15 @@
           <h2>Produksjonslokasjoner</h2>
           <div class="form-grid">
             <label>Deltype<select id="layoutPartType"></select></label>
+            <label>Pakking<select id="layoutPacking"><option value="Auto">Auto</option><option value="Grid">Grid</option><option value="Hex">Hex</option></select></label>
             <label>Kolonner<input id="layoutCols" type="number" value="4" min="1" /></label>
             <label>Rader<input id="layoutRows" type="number" value="3" min="1" /></label>
             <label>Z mm<input id="layoutZ" type="number" value="95" min="1" /></label>
+            <label>Maks hÃ¸yde mm<input id="layoutMaxHeight" type="number" value="150" min="1" /></label>
             <label>Klaring deler mm<input id="layoutPartClearance" type="number" value="20" min="0" /></label>
             <label>Klaring vegg mm<input id="layoutWallClearance" type="number" value="50" min="0" /></label>
+            <label>Materiale<select id="layoutMaterial"><option value="Steel">Steel</option><option value="Stainless steel">Stainless steel</option><option value="Aluminum">Aluminum</option><option value="Brass">Brass</option><option value="Copper">Copper</option><option value="Titanium">Titanium</option><option value="Plastic (PA/nylon)">Plastic (PA/nylon)</option><option value="Plastic (POM)">Plastic (POM)</option><option value="Custom">Custom</option></select></label>
+            <label>Tetthet kg/mÂ³<input id="layoutDensity" type="number" value="7850" min="1" /></label>
           </div>
           <div class="actions">
             <button id="generateLayoutBtn">Generer hylle</button>

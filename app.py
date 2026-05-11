@@ -9,13 +9,37 @@ from flask import Flask, jsonify, redirect, render_template, request, send_file,
 from openpyxl import Workbook, load_workbook
 from werkzeug.utils import secure_filename
 
+from cell_controller import CellController
 from cell_service import ProductionCellService
+from config import load_config
+from integrations.cmz_focas_client import CmzFocasClient
+from integrations.cmz_loader_signals import build_cmz_signal_map
+from integrations.haenel_client import HaenelClient
 from opcua_server import OpcUaSimulator
 
 
 app = Flask(__name__)
 app.secret_key = "development-only-change-before-production-" + secrets.token_hex(16)
+config = load_config()
+cmz_signal_map = build_cmz_signal_map(config.cmz_machine_family)
 service = ProductionCellService()
+service.set_runtime_config(
+    {
+        "cmz_machine_family": config.cmz_machine_family,
+        "cmz_loader_base": cmz_signal_map.base,
+        "cmz_ip": config.cmz_ip,
+        "cmz_port": config.cmz_port,
+        "haenel_base_url": config.haenel_base_url,
+    }
+)
+cmz_client = CmzFocasClient(
+    ip=config.cmz_ip,
+    port=config.cmz_port,
+    signal_map=cmz_signal_map,
+    status_provider=service.get_state,
+)
+haenel_client = HaenelClient(base_url=config.haenel_base_url)
+cell_controller = CellController(service, cmz_client, haenel_client)
 opcua_simulator = OpcUaSimulator(service)
 
 
@@ -178,6 +202,13 @@ def api_admin_users_delete(username: str):
         return jsonify({"error": str(exc)}), 400
 
 
+@app.post("/api/admin/clear-data")
+@require_role("administrator")
+def api_admin_clear_data():
+    cell_controller.submit("RESET")
+    return jsonify(service.clear_development_data())
+
+
 @app.get("/api/diagnostics")
 @require_role("service")
 def api_diagnostics():
@@ -269,6 +300,10 @@ def api_shelf_configure_graphic():
                 float(payload.get("z_mm", 100)),
                 float(payload.get("part_clearance_mm", service.settings["part_clearance_mm"])),
                 float(payload.get("wall_clearance_mm", service.settings["wall_clearance_mm"])),
+                payload.get("packing", "Grid"),
+                payload.get("material", "Steel"),
+                float(payload["density_kg_m3"]) if payload.get("density_kg_m3") not in {None, ""} else None,
+                float(payload["max_height_mm"]) if payload.get("max_height_mm") not in {None, ""} else None,
             )
         )
     except ValueError as exc:
@@ -351,7 +386,9 @@ def api_jobs_create():
 def api_jobs_start(job_id: str):
     payload = request.get_json(silent=True) or {}
     try:
-        return jsonify(service.start_job(job_id, payload.get("mode", "quantity"), payload.get("quantity")))
+        order = service.start_job(job_id, payload.get("mode", "quantity"), payload.get("quantity"))
+        cell_controller.submit("START_JOB", {"job_id": job_id})
+        return jsonify(order)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 
@@ -370,7 +407,16 @@ def api_production_start():
 @require_role("operator")
 def api_production_stop():
     payload = request.get_json(silent=True) or {}
-    return jsonify(service.stop_production(payload.get("reason", "Stopped from HMI")))
+    reason = payload.get("reason", "Stopped from HMI")
+    cell_controller.submit("STOP", {"reason": reason})
+    return jsonify(service.stop_production(reason))
+
+
+@app.post("/api/production/reset")
+@require_role("operator")
+def api_production_reset():
+    cell_controller.submit("RESET")
+    return jsonify({"ok": True})
 
 
 @app.post("/api/cnc/program/select")
@@ -464,6 +510,7 @@ def api_sim_step():
 
 def start_background_services() -> None:
     opcua_simulator.start()
+    cell_controller.start()
 
 
 if __name__ == "__main__":
