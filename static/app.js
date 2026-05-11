@@ -75,6 +75,12 @@ function renderStatusBadges(state) {
     $('opcuaBadge').className = state.opcua?.running ? 'ok' : 'warn';
   }
   if ($('activeShelfBadge')) $('activeShelfBadge').textContent = state.active_shelf || '-';
+  if ($('cellStateBadge')) {
+    $('cellStateBadge').textContent = state.dashboard?.cell_state || '-';
+    $('cellStateBadge').className = state.production_order?.active ? 'ok' : 'warn';
+  }
+  if ($('cncStateBadge')) $('cncStateBadge').textContent = state.cnc?.machine_state || '-';
+  if ($('robotStateBadge')) $('robotStateBadge').textContent = state.robot?.status_message || '-';
 }
 
 function renderMachineStatus(state) {
@@ -117,6 +123,18 @@ function renderProductionStatus(order) {
     ...order,
     next_pick: formatTarget(order?.next_pick),
   });
+}
+
+function renderDashboardSummary(state) {
+  const dash = state.dashboard || {};
+  if ($('dashJobName')) $('dashJobName').textContent = dash.active_job || '-';
+  if ($('dashPartType')) $('dashPartType').textContent = dash.part_type_id || '-';
+  if ($('dashProgress')) $('dashProgress').textContent = `${dash.processed_qty ?? 0} / ${dash.target_qty ?? 0}`;
+  if ($('dashRemainingQty')) $('dashRemainingQty').textContent = String(dash.remaining_qty ?? 0);
+  if ($('dashCycleTime')) $('dashCycleTime').textContent = `${dash.cycle_time_min ?? 0} min`;
+  if ($('dashRemainingHours')) $('dashRemainingHours').textContent = `${dash.remaining_hours ?? 0} t`;
+  if ($('dashRefillHours')) $('dashRefillHours').textContent = `${dash.hours_until_refill ?? 0} t`;
+  if ($('dashElapsedHours')) $('dashElapsedHours').textContent = `${dash.elapsed_hours ?? 0} t`;
 }
 
 function renderEvents(state, targetId = 'eventTable', limit = 8) {
@@ -425,16 +443,14 @@ async function initJobs() {
 
 function renderDashboardState(state) {
   renderStatusBadges(state);
+  renderDashboardSummary(state);
   renderMachineStatus(state);
-  renderLiftAccessStatus(state);
-  renderProductionStatus(state.production_order);
-  renderEvents(state);
 }
 
 async function sendCommand(command) {
   const state = await postJson('/api/opcua/signal', { command });
-  renderDashboardState(state);
-  await loadShelfLayout(state.active_shelf);
+  renderMachineStatus(state);
+  renderKv('simulationStatus', state.simulation);
   return state;
 }
 
@@ -457,22 +473,7 @@ async function requestDashboardShelf() {
 
 async function initDashboard() {
   const state = await getState();
-  fillSelect('dashboardShelfSelect', state.shelves, (s) => s, (s) => `Hylle ${s}`, state.active_shelf);
-  setupProgramControls(state);
-  setupProductionControls(state);
   renderDashboardState(state);
-  await loadShelfLayout(state.active_shelf);
-
-  on('dashboardShelfSelect', 'change', async () => {
-    await loadShelfLayout($('dashboardShelfSelect').value);
-  });
-  on('requestShelfBtn', 'click', requestDashboardShelf);
-  document.querySelectorAll('.sim-command').forEach((button) => {
-    button.addEventListener('click', async () => sendCommand(button.dataset.command));
-  });
-  on('sendShelfCommandBtn', 'click', async () => {
-    await sendCommand($('shelfCommandInput').value);
-  });
 }
 
 async function initShelves() {
@@ -604,6 +605,85 @@ async function initShelves() {
       alert(error.message);
     }
   });
+}
+
+async function initSimulation() {
+  const state = await getState();
+  renderKv('simulationStatus', state.simulation);
+  renderMachineStatus(state);
+  on('simStartBtn', 'click', async () => {
+    const data = await postJson('/api/simulation/start');
+    renderKv('simulationStatus', data);
+    await refreshCurrentPage();
+  });
+  on('simPauseBtn', 'click', async () => {
+    const data = await postJson('/api/simulation/pause');
+    renderKv('simulationStatus', data);
+    await refreshCurrentPage();
+  });
+  on('simStepBtn', 'click', async () => {
+    const data = await postJson('/api/simulation/step');
+    renderKv('simulationStatus', data);
+    await refreshCurrentPage();
+  });
+  document.querySelectorAll('.sim-command').forEach((button) => {
+    button.addEventListener('click', async () => sendCommand(button.dataset.command));
+  });
+  on('sendSimulationCommandBtn', 'click', async () => {
+    await sendCommand($('simulationCommandInput').value);
+  });
+}
+
+async function initAdmin() {
+  async function loadUsers() {
+    const response = await fetch('/api/admin/users');
+    const users = await response.json();
+    if (!response.ok) throw new Error(users.error || 'Unable to load users');
+    const body = $('usersTable');
+    if (!body) return;
+    body.innerHTML = '';
+    users.forEach((user) => {
+      const tr = document.createElement('tr');
+      const edit = document.createElement('button');
+      edit.className = 'secondary';
+      edit.textContent = 'Velg';
+      edit.addEventListener('click', () => {
+        $('adminUsername').value = user.username;
+        $('adminRole').value = user.role;
+        $('adminActive').checked = Boolean(user.active);
+        $('adminPassword').value = '';
+      });
+      const remove = document.createElement('button');
+      remove.className = 'danger';
+      remove.textContent = 'Slett';
+      remove.addEventListener('click', async () => {
+        if (!window.confirm(`Slett bruker ${user.username}?`)) return;
+        const result = await fetch(`/api/admin/users/${encodeURIComponent(user.username)}`, { method: 'DELETE' });
+        const payload = await result.json();
+        if (!result.ok) throw new Error(payload.error || 'Delete failed');
+        await loadUsers();
+      });
+      const actions = document.createElement('td');
+      actions.append(edit, remove);
+      tr.append(makeCell(user.username), makeCell(user.role), makeCell(user.active ? 'Ja' : 'Nei'), actions);
+      body.appendChild(tr);
+    });
+  }
+  on('saveUserBtn', 'click', async () => {
+    try {
+      const result = await postJson('/api/admin/users', {
+        username: $('adminUsername').value,
+        role: $('adminRole').value,
+        password: $('adminPassword').value,
+        active: $('adminActive').checked,
+      });
+      renderKv('adminStatus', result);
+      await loadUsers();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  await loadUsers();
 }
 
 async function initParts() {
@@ -795,7 +875,6 @@ async function refreshCurrentPage() {
   const state = await getState();
   if (page === 'dashboard') {
     renderDashboardState(state);
-    await loadShelfLayout($('dashboardShelfSelect')?.value || state.active_shelf);
   }
   if (page === 'opcua') {
     renderKv('opcuaStatus', state.opcua);
@@ -814,6 +893,10 @@ async function refreshCurrentPage() {
   if (page === 'cnc' || page === 'lift') {
     renderMachineStatus(state);
   }
+  if (page === 'simulation') {
+    renderKv('simulationStatus', state.simulation);
+    renderMachineStatus(state);
+  }
 }
 
 (async function boot() {
@@ -822,13 +905,15 @@ async function refreshCurrentPage() {
   if (page === 'shelves') await initShelves();
   if (page === 'parts') await initParts();
   if (page === 'jobs') await initJobs();
+  if (page === 'simulation') await initSimulation();
+  if (page === 'admin') await initAdmin();
   if (page === 'cnc') await initCnc();
   if (page === 'lift') await initLift();
   if (page === 'opcua') await initOpcua();
   if (page === 'stats') await initStats();
   if (page === 'diagnostics') await initDiagnostics();
 
-  if (page === 'dashboard' || page === 'opcua' || page === 'jobs') {
+  if (page === 'dashboard' || page === 'opcua' || page === 'jobs' || page === 'simulation') {
     setInterval(refreshCurrentPage, 2500);
   }
 })().catch((error) => {

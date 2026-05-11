@@ -1,4 +1,4 @@
-from app import ProductionCellService
+from app import ProductionCellService, app
 
 
 def test_shelves_are_numbered_1_to_50():
@@ -20,6 +20,8 @@ def test_start_production_quantity_and_complete():
     order = service.start_production("PT-RAW-120", "quantity", 2)
     assert order["target_qty"] == 2
     assert order["selected_program"] == "O1200"
+    assert order["cycle_time_sec_estimate"] > 0
+    assert service.get_state()["dashboard"]["remaining_hours"] > 0
     service.complete_one_part()
     service.complete_one_part()
     assert service.production_order["active"] is False
@@ -181,3 +183,22 @@ def test_reference_files_are_loaded_for_commands_and_focas():
     assert "cnc_statinfo" in service.available_focas_functions
     assert "cnc_rdparam" in service.available_focas_functions
     assert len(service.focas_function_params.get("cnc_rdparam", [])) > 0
+
+
+def test_development_users_authenticate_by_role():
+    service = ProductionCellService()
+    assert service.authenticate_user("operator", "operator123")["role"] == "operator"
+    assert service.authenticate_user("admin", "admin123")["role"] == "administrator"
+    assert service.authenticate_user("admin", "wrong") is None
+
+
+def test_dashboard_is_public_but_admin_requires_login():
+    app.config.update(TESTING=True)
+    client = app.test_client()
+
+    assert client.get("/").status_code == 200
+    assert client.get("/admin").status_code == 302
+
+    login = client.post("/login", data={"username": "admin", "password": "admin123", "next": "/admin"})
+    assert login.status_code == 302
+    assert client.get("/admin").status_code == 200

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from functools import wraps
 from io import BytesIO
+import secrets
 from uuid import uuid4
 
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
 from openpyxl import Workbook, load_workbook
 from werkzeug.utils import secure_filename
 
@@ -12,8 +14,49 @@ from opcua_server import OpcUaSimulator
 
 
 app = Flask(__name__)
+app.secret_key = "development-only-change-before-production-" + secrets.token_hex(16)
 service = ProductionCellService()
 opcua_simulator = OpcUaSimulator(service)
+
+
+ROLE_ORDER = ProductionCellService.ROLE_ORDER
+
+
+def current_user() -> dict | None:
+    user = session.get("user")
+    return user if isinstance(user, dict) else None
+
+
+def has_role(role: str) -> bool:
+    user = current_user()
+    if not user:
+        return False
+    return ROLE_ORDER.get(user.get("role", ""), 0) >= ROLE_ORDER.get(role, 999)
+
+
+def require_role(role: str):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            if not current_user():
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "Login required"}), 401
+                return redirect(url_for("login_page", next=request.path))
+            if not has_role(role):
+                if request.path.startswith("/api/"):
+                    return jsonify({"error": "Insufficient role"}), 403
+                return redirect(url_for("dashboard_page"))
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+@app.context_processor
+def inject_user():
+    user = current_user()
+    return {"current_user": user, "has_role": has_role}
 
 
 @app.get("/")
@@ -21,44 +64,84 @@ def dashboard_page():
     return render_template("dashboard.html")
 
 
+@app.get("/login")
+def login_page():
+    return render_template("login.html", next_url=request.args.get("next", "/"))
+
+
+@app.post("/login")
+def login_submit():
+    user = service.authenticate_user(request.form.get("username", ""), request.form.get("password", ""))
+    if not user:
+        return render_template("login.html", error="Feil brukernavn eller passord", next_url=request.form.get("next", "/")), 401
+    session["user"] = user
+    return redirect(request.form.get("next") or url_for("dashboard_page"))
+
+
+@app.post("/logout")
+def logout_submit():
+    session.clear()
+    return redirect(url_for("dashboard_page"))
+
+
 @app.get("/shelves")
+@require_role("operator")
 def shelves_page():
     return render_template("shelves.html")
 
 
 @app.get("/parts")
+@require_role("innstiller")
 def parts_page():
     return render_template("parts.html")
 
 
 @app.get("/jobs")
+@require_role("operator")
 def jobs_page():
     return render_template("jobs.html")
 
 
 @app.get("/cnc")
+@require_role("innstiller")
 def cnc_page():
     return render_template("cnc.html")
 
 
 @app.get("/lift")
+@require_role("innstiller")
 def lift_page():
     return render_template("lift.html")
 
 
 @app.get("/opcua")
+@require_role("service")
 def opcua_page():
     return render_template("opcua.html")
 
 
 @app.get("/stats")
+@require_role("operator")
 def stats_page():
     return render_template("stats.html")
 
 
 @app.get("/diagnostics")
+@require_role("service")
 def diagnostics_page():
     return render_template("diagnostics.html")
+
+
+@app.get("/simulation")
+@require_role("service")
+def simulation_page():
+    return render_template("simulation.html")
+
+
+@app.get("/admin")
+@require_role("administrator")
+def admin_page():
+    return render_template("admin.html")
 
 
 @app.get("/api/state")
@@ -66,12 +149,43 @@ def api_state():
     return jsonify(service.get_state())
 
 
+@app.get("/api/session")
+def api_session():
+    return jsonify({"user": current_user(), "roles": list(ROLE_ORDER.keys())})
+
+
+@app.get("/api/admin/users")
+@require_role("administrator")
+def api_admin_users():
+    return jsonify(service.list_users())
+
+
+@app.post("/api/admin/users")
+@require_role("administrator")
+def api_admin_users_save():
+    try:
+        return jsonify(service.upsert_user(request.get_json(force=True)))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
+@app.delete("/api/admin/users/<username>")
+@require_role("administrator")
+def api_admin_users_delete(username: str):
+    try:
+        return jsonify(service.delete_user(username))
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+
 @app.get("/api/diagnostics")
+@require_role("service")
 def api_diagnostics():
     return jsonify(service.diagnostics)
 
 
 @app.get("/api/leanlift/shelf-layout/<shelf>")
+@require_role("operator")
 def api_shelf_layout(shelf: str):
     try:
         return jsonify(service.get_shelf_layout(shelf))
@@ -80,6 +194,7 @@ def api_shelf_layout(shelf: str):
 
 
 @app.get("/api/leanlift/shelf-layout/<shelf>/export")
+@require_role("operator")
 def api_shelf_layout_export(shelf: str):
     try:
         rows = service.export_shelf_layout_rows(shelf)
@@ -103,6 +218,7 @@ def api_shelf_layout_export(shelf: str):
 
 
 @app.post("/api/leanlift/shelf-layout/<shelf>/import")
+@require_role("innstiller")
 def api_shelf_layout_import(shelf: str):
     uploaded_file = request.files.get("file")
     if not uploaded_file or not uploaded_file.filename:
@@ -131,6 +247,7 @@ def api_shelf_layout_import(shelf: str):
 
 
 @app.post("/api/settings")
+@require_role("innstiller")
 def api_settings():
     try:
         return jsonify(service.update_settings(request.get_json(force=True)))
@@ -139,6 +256,7 @@ def api_settings():
 
 
 @app.post("/api/shelf/configure-graphic")
+@require_role("innstiller")
 def api_shelf_configure_graphic():
     payload = request.get_json(force=True)
     try:
@@ -158,6 +276,7 @@ def api_shelf_configure_graphic():
 
 
 @app.post("/api/shelf/slot/update")
+@require_role("operator")
 def api_slot_update():
     payload = request.get_json(force=True)
     try:
@@ -175,6 +294,7 @@ def api_slot_update():
 
 
 @app.post("/api/shelf/status-bulk")
+@require_role("operator")
 def api_shelf_status_bulk():
     payload = request.get_json(force=True)
     try:
@@ -191,6 +311,7 @@ def api_shelf_status_bulk():
 
 
 @app.post("/api/parts")
+@require_role("innstiller")
 def api_parts():
     try:
         return jsonify(service.upsert_part_type(request.get_json(force=True)))
@@ -199,6 +320,7 @@ def api_parts():
 
 
 @app.post("/api/nc-programs/upload")
+@require_role("operator")
 def api_nc_program_upload():
     uploaded_file = request.files.get("file")
     if not uploaded_file or not uploaded_file.filename:
@@ -216,6 +338,7 @@ def api_nc_program_upload():
 
 
 @app.post("/api/jobs")
+@require_role("operator")
 def api_jobs_create():
     try:
         return jsonify(service.create_job(request.get_json(force=True)))
@@ -224,6 +347,7 @@ def api_jobs_create():
 
 
 @app.post("/api/jobs/<job_id>/start")
+@require_role("operator")
 def api_jobs_start(job_id: str):
     payload = request.get_json(silent=True) or {}
     try:
@@ -233,6 +357,7 @@ def api_jobs_start(job_id: str):
 
 
 @app.post("/api/production/start")
+@require_role("operator")
 def api_production_start():
     payload = request.get_json(force=True)
     try:
@@ -242,12 +367,14 @@ def api_production_start():
 
 
 @app.post("/api/production/stop")
+@require_role("operator")
 def api_production_stop():
     payload = request.get_json(silent=True) or {}
     return jsonify(service.stop_production(payload.get("reason", "Stopped from HMI")))
 
 
 @app.post("/api/cnc/program/select")
+@require_role("innstiller")
 def api_cnc_program_select():
     payload = request.get_json(force=True)
     try:
@@ -257,6 +384,7 @@ def api_cnc_program_select():
 
 
 @app.post("/api/cnc/focas")
+@require_role("service")
 def api_cnc_focas():
     payload = request.get_json(force=True)
     try:
@@ -266,6 +394,7 @@ def api_cnc_focas():
 
 
 @app.post("/api/lift/command")
+@require_role("service")
 def api_lift_command():
     payload = request.get_json(force=True)
     try:
@@ -275,6 +404,7 @@ def api_lift_command():
 
 
 @app.post("/api/lift/request-shelf")
+@require_role("operator")
 def api_lift_request_shelf():
     payload = request.get_json(force=True)
     try:
@@ -291,11 +421,13 @@ def api_lift_request_shelf():
 
 
 @app.get("/api/opcua/status")
+@require_role("service")
 def api_opcua_status():
     return jsonify(service.get_state()["opcua"])
 
 
 @app.post("/api/opcua/start")
+@require_role("service")
 def api_opcua_start():
     started = opcua_simulator.start()
     state = service.get_state()["opcua"]
@@ -304,6 +436,7 @@ def api_opcua_start():
 
 
 @app.post("/api/opcua/signal")
+@require_role("service")
 def api_opcua_signal():
     payload = request.get_json(force=True)
     if "command" in payload:
@@ -312,16 +445,19 @@ def api_opcua_signal():
 
 
 @app.post("/api/simulation/start")
+@require_role("service")
 def api_sim_start():
     return jsonify(service.simulation_start())
 
 
 @app.post("/api/simulation/pause")
+@require_role("service")
 def api_sim_pause():
     return jsonify(service.simulation_pause())
 
 
 @app.post("/api/simulation/step")
+@require_role("service")
 def api_sim_step():
     return jsonify(service.simulation_step())
 

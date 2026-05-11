@@ -8,6 +8,7 @@ import json
 import math
 import re
 from typing import Any, Dict, List
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 @dataclass
@@ -23,6 +24,8 @@ class Product:
 
 class ProductionCellService:
     """In-memory development model for the integrated manufacturing cell."""
+
+    ROLE_ORDER = {"operator": 1, "innstiller": 2, "service": 3, "administrator": 4}
 
     def __init__(self) -> None:
         self.lock = RLock()
@@ -142,6 +145,10 @@ class ProductionCellService:
             "selected_program": self.cnc_status["selected_program"],
             "program_source": self.cnc_status["program_source"],
             "next_pick": None,
+            "started_at": "",
+            "last_cycle_started_at": "",
+            "cycle_time_sec_estimate": 0,
+            "avg_cycle_time_sec": 0,
             "state": "Idle",
         }
         self.simulation = {"running": False, "tick": 0, "active_shelf": self.active_shelf, "last_event": "Not started"}
@@ -154,6 +161,12 @@ class ProductionCellService:
             {"program_name": "O0803", "description": "Hylse O80 - revision B"},
         ]
         self.jobs: List[Dict[str, Any]] = []
+        self.users: Dict[str, Dict[str, Any]] = {
+            "operator": {"username": "operator", "password_hash": generate_password_hash("operator123"), "role": "operator", "active": True},
+            "innstiller": {"username": "innstiller", "password_hash": generate_password_hash("innstiller123"), "role": "innstiller", "active": True},
+            "service": {"username": "service", "password_hash": generate_password_hash("service123"), "role": "service", "active": True},
+            "admin": {"username": "admin", "password_hash": generate_password_hash("admin123"), "role": "administrator", "active": True},
+        }
 
         self.available_focas_functions, self.focas_function_params = self._load_focas_reference()
         self.available_leanlift_rest_commands, self.leanlift_command_params = self._load_hostweb_reference()
@@ -173,6 +186,20 @@ class ProductionCellService:
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    def _parse_ts(self, value: str) -> datetime | None:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    def _estimate_cycle_time_sec(self, part_type: Dict[str, Any]) -> int:
+        return int(120 + float(part_type.get("diameter_mm", 0)) * 0.8 + float(part_type.get("length_mm", 0)) * 0.45)
+
+    def _cycle_time_for_order(self) -> int:
+        return int(self.production_order.get("avg_cycle_time_sec") or self.production_order.get("cycle_time_sec_estimate") or 180)
 
     def _log(self, category: str, message: str) -> None:
         self.history.insert(0, {"ts": self._now(), "category": category, "message": message})
@@ -428,6 +455,30 @@ class ProductionCellService:
                 summary[part_type_id][status] = summary[part_type_id].get(status, 0) + 1
         return summary
 
+    def _dashboard_metrics(self) -> Dict[str, Any]:
+        order = dict(self.production_order)
+        part_type_id = order.get("part_type_id", "")
+        cycle_sec = self._cycle_time_for_order()
+        remaining_qty = max(int(order.get("target_qty") or 0) - int(order.get("processed_qty") or 0), 0)
+        available_qty = len(self._inventory_candidates(part_type_id, {"raw", "reserved", "wip"})) if part_type_id else 0
+        started = self._parse_ts(order.get("started_at", ""))
+        elapsed_sec = int((datetime.now(timezone.utc) - started).total_seconds()) if started else 0
+        return {
+            "cell_state": "Produksjon" if order.get("active") else order.get("state", "Idle"),
+            "active_job": order.get("job_name") or order.get("job_id") or "Ingen aktiv jobb",
+            "job_id": order.get("job_id", ""),
+            "part_type_id": part_type_id,
+            "target_qty": order.get("target_qty", 0),
+            "processed_qty": order.get("processed_qty", 0),
+            "remaining_qty": remaining_qty,
+            "cycle_time_sec": cycle_sec,
+            "cycle_time_min": round(cycle_sec / 60, 1),
+            "remaining_hours": round((remaining_qty * cycle_sec) / 3600, 2),
+            "hours_until_refill": round((available_qty * cycle_sec) / 3600, 2) if part_type_id else 0,
+            "available_parts_for_job": available_qty,
+            "elapsed_hours": round(elapsed_sec / 3600, 2),
+        }
+
     def get_shelf_layout(self, shelf: str) -> Dict[str, Any]:
         with self.lock:
             if shelf not in self.shelves:
@@ -475,6 +526,7 @@ class ProductionCellService:
                 "opcua": self.opcua_status,
                 "simulation": self.simulation,
                 "production_order": self.production_order,
+                "dashboard": self._dashboard_metrics(),
                 "jobs": self.jobs,
                 "cnc_existing_programs": self.cnc_existing_programs,
                 "stats": self.get_stats(),
@@ -652,6 +704,51 @@ class ProductionCellService:
             self._log("parts", f"Saved part type {part_type_id}")
             return record
 
+    def list_users(self) -> List[Dict[str, Any]]:
+        with self.lock:
+            return [{"username": user["username"], "role": user["role"], "active": user["active"]} for user in sorted(self.users.values(), key=lambda item: item["username"])]
+
+    def authenticate_user(self, username: str, password: str) -> Dict[str, Any] | None:
+        with self.lock:
+            user = self.users.get((username or "").strip().lower())
+            if not user or not user.get("active"):
+                return None
+            if not check_password_hash(user["password_hash"], password or ""):
+                return None
+            return {"username": user["username"], "role": user["role"], "active": user["active"]}
+
+    def upsert_user(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        with self.lock:
+            username = (payload.get("username") or "").strip().lower()
+            role = (payload.get("role") or "operator").strip().lower()
+            password = payload.get("password") or ""
+            if not username:
+                raise ValueError("username is required")
+            if role not in self.ROLE_ORDER:
+                raise ValueError("Unknown role")
+            existing = self.users.get(username)
+            if not existing and not password:
+                raise ValueError("password is required for new users")
+            record = existing or {"username": username, "password_hash": "", "role": role, "active": True}
+            record["role"] = role
+            record["active"] = bool(payload.get("active", True))
+            if password:
+                record["password_hash"] = generate_password_hash(password)
+            self.users[username] = record
+            self._log("admin", f"Saved user {username} with role {role}")
+            return {"username": record["username"], "role": record["role"], "active": record["active"]}
+
+    def delete_user(self, username: str) -> Dict[str, Any]:
+        with self.lock:
+            key = (username or "").strip().lower()
+            if key == "admin":
+                raise ValueError("Default admin user cannot be deleted in development mode")
+            if key not in self.users:
+                raise ValueError("Unknown user")
+            self.users.pop(key)
+            self._log("admin", f"Deleted user {key}")
+            return {"deleted": key}
+
     def _normalize_program_name(self, value: str) -> str:
         raw = (value or "").strip().upper()
         if not raw:
@@ -758,6 +855,7 @@ class ProductionCellService:
 
             first = selected_candidates[0]
             first_target = self._slot_target(first["shelf"], first["slot"])
+            started_at = self._now()
             self.production_order = {
                 "active": True,
                 "job_id": job["job_id"],
@@ -770,6 +868,10 @@ class ProductionCellService:
                 "selected_program": job["program_name"],
                 "program_source": job["program_source_type"],
                 "next_pick": first_target,
+                "started_at": started_at,
+                "last_cycle_started_at": started_at,
+                "cycle_time_sec_estimate": self._estimate_cycle_time_sec(part_type),
+                "avg_cycle_time_sec": 0,
                 "state": "Queued",
             }
             job["status"] = "running"
@@ -835,6 +937,7 @@ class ProductionCellService:
                 raise ValueError("Safety chain is not OK in simulation")
             for slot in raw_slots[:target]:
                 slot["status"] = "reserved"
+            started_at = self._now()
             self.production_order = {
                 "active": True,
                 "job_id": "",
@@ -847,6 +950,10 @@ class ProductionCellService:
                 "selected_program": selected_program,
                 "program_source": "manual_selection",
                 "next_pick": None,
+                "started_at": started_at,
+                "last_cycle_started_at": started_at,
+                "cycle_time_sec_estimate": self._estimate_cycle_time_sec(part_type),
+                "avg_cycle_time_sec": 0,
                 "state": "Queued",
             }
             self._prepare_next_pick()
@@ -890,6 +997,14 @@ class ProductionCellService:
             wip_slot["status"] = "finished"
             finished_target = self._slot_target(wip_shelf, wip_slot)
             self.robot_status["place_target"] = finished_target
+        now = datetime.now(timezone.utc)
+        cycle_started = self._parse_ts(self.production_order.get("last_cycle_started_at", ""))
+        if cycle_started:
+            cycle_time = max(int((now - cycle_started).total_seconds()), 1)
+            previous_avg = int(self.production_order.get("avg_cycle_time_sec") or 0)
+            completed = int(self.production_order.get("processed_qty") or 0)
+            self.production_order["avg_cycle_time_sec"] = cycle_time if previous_avg <= 0 else int(((previous_avg * completed) + cycle_time) / (completed + 1))
+        self.production_order["last_cycle_started_at"] = self._now()
         self.production_order["processed_qty"] += 1
         self.cnc_status["part_counter"] += 1
         if self.production_order["processed_qty"] >= self.production_order["target_qty"]:

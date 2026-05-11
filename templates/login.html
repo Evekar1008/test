@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logg inn</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="login">
+    {% include '_nav.html' %}
+    <main class="page narrow">
+      <section class="card">
+        <h1>Logg inn</h1>
+        {% if error %}<p class="bad">{{ error }}</p>{% endif %}
+        <form method="post" action="/login" class="form-grid">
+          <input type="hidden" name="next" value="{{ next_url }}" />
+          <label>Bruker<input name="username" autocomplete="username" required /></label>
+          <label>Passord<input name="password" type="password" autocomplete="current-password" required /></label>
+          <button>Logg inn</button>
+        </form>
+        <p class="muted">Utviklingsbrukere: operator/operator123, innstiller/innstiller123, service/service123, admin/admin123.</p>
+      </section>
+    </main>
+  </body>
+</html>

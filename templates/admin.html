@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="admin">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <h1>Brukere</h1>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bruker</th><th>Nivå</th><th>Aktiv</th><th></th></tr></thead>
+              <tbody id="usersTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="card">
+          <h2>Opprett / endre</h2>
+          <div class="form-grid">
+            <label>Bruker<input id="adminUsername" /></label>
+            <label>Nivå<select id="adminRole"><option value="operator">operator</option><option value="innstiller">innstiller</option><option value="service">service</option><option value="administrator">administrator</option></select></label>
+            <label>Passord<input id="adminPassword" type="password" /></label>
+          </div>
+          <label class="checkbox-line"><input id="adminActive" type="checkbox" checked /> Aktiv</label>
+          <div class="actions">
+            <button id="saveUserBtn">Lagre bruker</button>
+          </div>
+          <dl id="adminStatus" class="kv"></dl>
+        </article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

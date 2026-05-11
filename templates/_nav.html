@@ -1,11 +1,28 @@
 <nav class="topnav">
   <a href="/">Dashboard</a>
-  <a href="/shelves">Hyllekart</a>
-  <a href="/parts">Deler</a>
-  <a href="/jobs">Jobber</a>
-  <a href="/cnc">CNC / FOCAS</a>
-  <a href="/lift">LeanLift</a>
-  <a href="/opcua">OPC UA</a>
-  <a href="/stats">Historikk</a>
-  <a href="/diagnostics">Diagnostikk</a>
+  {% if current_user %}
+    <a href="/shelves">Hyllekart</a>
+    <a href="/jobs">Jobber</a>
+    <a href="/stats">Historikk</a>
+  {% endif %}
+  {% if has_role('innstiller') %}
+    <a href="/parts">Deler</a>
+    <a href="/cnc">CNC / FOCAS</a>
+    <a href="/lift">LeanLift</a>
+  {% endif %}
+  {% if has_role('service') %}
+    <a href="/simulation">Simulering</a>
+    <a href="/opcua">OPC UA</a>
+    <a href="/diagnostics">Diagnostikk</a>
+  {% endif %}
+  {% if has_role('administrator') %}
+    <a href="/admin">Admin</a>
+  {% endif %}
+  <span class="nav-spacer"></span>
+  {% if current_user %}
+    <span class="nav-user">{{ current_user.username }} / {{ current_user.role }}</span>
+    <form method="post" action="/logout" class="nav-form"><button class="secondary">Logg ut</button></form>
+  {% else %}
+    <a href="/login">Logg inn</a>
+  {% endif %}
 </nav>

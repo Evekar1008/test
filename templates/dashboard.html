@@ -10,45 +10,35 @@
     {% include '_nav.html' %}
     <main class="page">
       <section class="status-strip">
+        <div><span class="label">Cellestatus</span><strong id="cellStateBadge">-</strong></div>
         <div><span class="label">Safety</span><strong id="safetyBadge">-</strong></div>
-        <div><span class="label">Modus</span><strong id="modeBadge">-</strong></div>
-        <div><span class="label">OPC UA</span><strong id="opcuaBadge">-</strong></div>
-        <div><span class="label">Aktiv hylle</span><strong id="activeShelfBadge">-</strong></div>
+        <div><span class="label">CNC</span><strong id="cncStateBadge">-</strong></div>
+        <div><span class="label">Robot</span><strong id="robotStateBadge">-</strong></div>
       </section>
 
       <section class="layout-2">
         <article class="card">
           <div class="section-title">
-            <h1>Produksjon</h1>
-            <div class="actions">
-              <a class="button-link secondary" href="/jobs">Jobber</a>
-              <button id="stopProductionBtn" class="secondary">Stopp</button>
-            </div>
+            <h1>Aktiv jobb</h1>
           </div>
-          <div class="form-grid">
-            <label>Deltype<select id="prodPartType"></select></label>
-            <label>Modus<select id="prodMode"><option value="quantity">Antall</option><option value="all">Alle raemner</option></select></label>
-            <label>Antall<input id="prodQty" type="number" value="2" min="1" /></label>
+          <div class="metric-grid">
+            <div><span class="label">Jobb</span><strong id="dashJobName">-</strong></div>
+            <div><span class="label">Deltype</span><strong id="dashPartType">-</strong></div>
+            <div><span class="label">Ferdig</span><strong id="dashProgress">-</strong></div>
+            <div><span class="label">Gjenstår</span><strong id="dashRemainingQty">-</strong></div>
           </div>
-          <div class="actions">
-            <button id="startProductionBtn">Start ad-hoc</button>
-            <button id="simStepBtn" class="secondary">Simuler steg</button>
-            <button id="simStartBtn" class="secondary">Kjor simulering</button>
-            <button id="simPauseBtn" class="secondary">Pause</button>
-          </div>
-          <dl id="productionStatus" class="kv"></dl>
         </article>
 
         <article class="card">
           <div class="section-title">
-            <h2>Programvalg</h2>
+            <h2>Tid</h2>
           </div>
-          <div class="form-grid">
-            <label>Produkt<select id="programProduct"></select></label>
-            <label>Program<select id="programSelect"></select></label>
+          <div class="metric-grid">
+            <div><span class="label">Syklustid</span><strong id="dashCycleTime">-</strong></div>
+            <div><span class="label">Produksjon igjen</span><strong id="dashRemainingHours">-</strong></div>
+            <div><span class="label">Til påfyll</span><strong id="dashRefillHours">-</strong></div>
+            <div><span class="label">Kjørt tid</span><strong id="dashElapsedHours">-</strong></div>
           </div>
-          <button id="selectProgramBtn">Velg program</button>
-          <dl id="cncProgramStatus" class="kv"></dl>
         </article>
       </section>
 
@@ -68,63 +58,6 @@
         <article class="card compact">
           <h2>Safety</h2>
           <dl id="safetyStatus" class="kv"></dl>
-        </article>
-      </section>
-
-      <section class="layout-2 wide-left">
-        <article class="card">
-          <div class="section-title">
-            <h2>Hylle ved uttak</h2>
-          </div>
-          <div class="form-grid">
-            <label>Hylle<select id="dashboardShelfSelect"></select></label>
-            <label>Uttak<select id="dashboardAccessPoint"><option value="1">Operatøruttak ute</option><option value="2">Robotuttak service</option></select></label>
-          </div>
-          <div class="actions">
-            <button id="requestShelfBtn">OK hent hylle</button>
-          </div>
-          <dl id="liftAccessStatus" class="kv"></dl>
-          <svg id="shelfSvg" viewBox="0 0 1000 450" role="img"></svg>
-          <div id="shelfInfo" class="muted"></div>
-        </article>
-
-        <article class="card">
-          <h2>Simuler signal</h2>
-          <div class="button-grid">
-            <button data-command="SAFETY_OK" class="secondary sim-command">Safety OK</button>
-            <button data-command="SAFETY_TRIP" class="danger sim-command">Safety trip</button>
-            <button data-command="TRAY_EXTEND" class="secondary sim-command">Tray ut</button>
-            <button data-command="TRAY_HOME" class="secondary sim-command">Tray inn</button>
-            <button data-command="CNC_START" class="secondary sim-command">CNC start</button>
-            <button data-command="CNC_COMPLETE" class="secondary sim-command">CNC ferdig</button>
-            <button data-command="ROBOT_FAULT" class="danger sim-command">Robot fault</button>
-            <button data-command="RESET_ALARMS" class="secondary sim-command">Reset</button>
-          </div>
-          <div class="inline-command">
-            <input id="shelfCommandInput" placeholder="GET_SHELF 7" />
-            <button id="sendShelfCommandBtn">Send</button>
-          </div>
-        </article>
-      </section>
-
-      <section class="layout-2">
-        <article class="card">
-          <h2>Koordinater</h2>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>Deltype</th><th>Status</th><th>Dia</th><th>X</th><th>Y</th><th>Z</th></tr></thead>
-              <tbody id="coordsTable"></tbody>
-            </table>
-          </div>
-        </article>
-        <article class="card">
-          <h2>Siste hendelser</h2>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>Tid</th><th>Kategori</th><th>Melding</th></tr></thead>
-              <tbody id="eventTable"></tbody>
-            </table>
-          </div>
         </article>
       </section>
     </main>

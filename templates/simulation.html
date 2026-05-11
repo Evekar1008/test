@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulering</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body data-page="simulation">
+    {% include '_nav.html' %}
+    <main class="page">
+      <section class="layout-2">
+        <article class="card">
+          <div class="section-title">
+            <h1>Simulering</h1>
+          </div>
+          <div class="actions">
+            <button id="simStepBtn">Simuler steg</button>
+            <button id="simStartBtn" class="secondary">Kjør simulering</button>
+            <button id="simPauseBtn" class="secondary">Pause</button>
+          </div>
+          <dl id="simulationStatus" class="kv"></dl>
+        </article>
+
+        <article class="card">
+          <h2>Simuler signal</h2>
+          <div class="button-grid">
+            <button data-command="SAFETY_OK" class="secondary sim-command">Safety OK</button>
+            <button data-command="SAFETY_TRIP" class="danger sim-command">Safety trip</button>
+            <button data-command="TRAY_EXTEND" class="secondary sim-command">Tray ut</button>
+            <button data-command="TRAY_HOME" class="secondary sim-command">Tray inn</button>
+            <button data-command="CNC_START" class="secondary sim-command">CNC start</button>
+            <button data-command="CNC_COMPLETE" class="secondary sim-command">CNC ferdig</button>
+            <button data-command="ROBOT_FAULT" class="danger sim-command">Robot fault</button>
+            <button data-command="RESET_ALARMS" class="secondary sim-command">Reset</button>
+          </div>
+          <div class="inline-command">
+            <input id="simulationCommandInput" placeholder="GET_SHELF 7" />
+            <button id="sendSimulationCommandBtn">Send</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="machine-grid">
+        <article class="card compact">
+          <h2>LeanLift</h2>
+          <dl id="liftStatus" class="kv"></dl>
+        </article>
+        <article class="card compact">
+          <h2>Robot</h2>
+          <dl id="robotStatus" class="kv"></dl>
+        </article>
+        <article class="card compact">
+          <h2>CNC</h2>
+          <dl id="cncStatus" class="kv"></dl>
+        </article>
+        <article class="card compact">
+          <h2>Safety</h2>
+          <dl id="safetyStatus" class="kv"></dl>
+        </article>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
